@@ -1,0 +1,107 @@
+
+
+# ------------------------------------------------------------------ #
+                ##### Image Classification #####
+# ------------------------------------------------------------------ #
+
+Classification problem: given an image, predict the correct class label
+
+
+# GPU
+#------------
+
+## Note: If you want to use GPU for your experiments you have to install tensorflow-gpu library.
+Tensorflow 2 will use automatically a GPU device if it is available on your system.
+
+https://www.tensorflow.org/install/gpu
+https://www.tensorflow.org/guide/gpu
+
+Additionally you can use Google Colaboratory (https://colab.research.google.com/notebooks/welcome.ipynb)
+to use a GPU on cloud. It is a service with an interface similar to Jupyter notebooks with most of the libraries
+already installed (check how to import Tensorflow 2).
+
+
+
+# Code organization
+# -----------------
+dataset splitting, data loader, model creation, model fitting, etc
+
+
+# Dataset
+# -------
+
+image size: variable
+
+color space: RGB/Grayscale (read as 'rgb' in ImageDataGenerator.flow_from_directory ('color_mode' attribute)
+             or use PIL.Image.open('imgname.jpg').convert('RGB'))
+
+num_classes = 20
+
+classes = [ 'owl' :                 # 0
+            'galaxy' :              # 1
+            'lightning' :           # 2
+            'wine-bottle' :         # 3
+            't-shirt' :             # 4
+            'waterfall' :           # 5
+            'sword' :               # 6
+            'school-bus' :          # 7
+            'calculator' :          # 8
+            'sheet-music' :         # 9
+            'airplanes' :           # 10
+            'lightbulb' :           # 11
+            'skyscraper' :          # 12
+            'mountain-bike' :       # 13
+            'fireworks' :           # 14
+            'computer-monitor' :    # 15
+            'bear' :                # 16
+            'grand-piano' :         # 17
+            'kangaroo' :            # 18
+            'laptop' :              # 19
+          ]
+
+
+# Dataset details:
+# ------------------
+
+Two folders:
+    training: 1554 images
+    test: 500 images
+
+Images per class:
+    school-bus : 73
+    laptop : 100
+    t-shirt : 100
+    grand-piano : 70
+    waterfall : 70
+    galaxy : 56
+    mountain-bike : 57
+    sword : 77
+    wine-bottle : 76
+    owl : 95
+    fireworks : 75
+    calculator : 75
+    sheet-music : 59
+    lightbulb : 67
+    bear : 77
+    computer-monitor : 100
+    airplanes : 100
+    skyscraper : 70
+    lightning : 100
+    kangaroo : 57
+
+# Data Loading
+# ------------
+
+- Use ImageDataGenerator
+
+- Training images are already in the format expected by Keras having a subfolder for each class
+
+- Important: assign the list of class subfolders to the parameter 'classes' of the flow_from_directory method,
+             in the order defined above in Dataset Details - Classes
+
+    ...
+    class_list = ['owl', 'galaxy', 'lightning', 'wine-bottle', ...]
+    train_gen = train_img_gen.flow_from_directory(..., classes=class_list, ...)
+
+    valid_gen = valid_img_gen.flow_from_directory(..., classes=class_list, ...)
+    ...
