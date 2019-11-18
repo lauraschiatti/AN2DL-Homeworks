@@ -28,7 +28,7 @@ TEST_DIR = os.path.join(DATASET_DIR, 'test')
 # Data Loading
 # ------------
 
-bs = 8 # 32 # batch size
+bs = 32 # batch size
 
 decide_class_indices = False
 
@@ -94,3 +94,39 @@ valid_gen = train_datagen.flow_from_directory(TRAIN_DIR,
 											 shuffle=False,
 											 seed=SEED)
 
+
+# target_size = c(256, 256), color_mode = "rgb", classes = NULL,
+# target_size = (128, 128) # img_width, img_height
+# Another benefit of this approach is that all the images are automatically resized according
+# to dimensions specified in the target_size argument. In the sample code above,
+# all images for both the training and test sets were resized to 128 x 128.
+
+print('\ntest_generator ... ')
+test_gen = test_datagen.flow_from_directory(TEST_DIR,
+											subset=None,
+											batch_size=bs,
+											classes=None,
+											# class_mode='categorical',
+											shuffle=False,
+											seed=SEED)
+
+# Variable img shape
+# print('img shape ... ')
+#
+# labels = next(train_generator)
+# num_classes = labels.shape[1]
+# print('num_classes', labels.shape[1])
+
+
+
+
+
+# Check that is everything is ok..
+# --------------------------------
+
+# model.fit_generator(
+#     train_generator,
+#     steps_per_epoch = train_generator.samples // batch_size,
+#     validation_data = validation_generator,
+#     validation_steps = validation_generator.samples // batch_size,
+#     epochs = nb_epochs)
