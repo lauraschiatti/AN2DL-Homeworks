@@ -37,26 +37,26 @@ color space: RGB/Grayscale (read as 'rgb' in ImageDataGenerator.flow_from_direct
 
 num_classes = 20
 
-classes = [ 'owl' :                 # 0
-            'galaxy' :              # 1
-            'lightning' :           # 2
-            'wine-bottle' :         # 3
-            't-shirt' :             # 4
-            'waterfall' :           # 5
-            'sword' :               # 6
-            'school-bus' :          # 7
-            'calculator' :          # 8
-            'sheet-music' :         # 9
-            'airplanes' :           # 10
-            'lightbulb' :           # 11
-            'skyscraper' :          # 12
-            'mountain-bike' :       # 13
-            'fireworks' :           # 14
-            'computer-monitor' :    # 15
-            'bear' :                # 16
-            'grand-piano' :         # 17
-            'kangaroo' :            # 18
-            'laptop' :              # 19
+classes = [ 'owl' ,                 # 0
+            'galaxy' ,              # 1
+            'lightning' ,           # 2
+            'wine-bottle' ,         # 3
+            't-shirt' ,             # 4
+            'waterfall' ,           # 5
+            'sword' ,               # 6
+            'school-bus' ,          # 7
+            'calculator' ,          # 8
+            'sheet-music' ,         # 9
+            'airplanes' ,           # 10
+            'lightbulb' ,           # 11
+            'skyscraper' ,          # 12
+            'mountain-bike' ,       # 13
+            'fireworks' ,           # 14
+            'computer-monitor' ,    # 15
+            'bear' ,                # 16
+            'grand-piano' ,         # 17
+            'kangaroo' ,            # 18
+            'laptop' ,              # 19
           ]
 
 
