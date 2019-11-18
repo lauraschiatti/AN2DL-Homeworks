@@ -32,8 +32,9 @@ dataset splitting, data loader, model creation, model fitting, etc
 
 image size: variable
 
-color space: RGB/Grayscale (read as 'rgb' in ImageDataGenerator.flow_from_directory ('color_mode' attribute)
-             or use PIL.Image.open('imgname.jpg').convert('RGB'))
+color space: RGB/Grayscale
+             - read as 'rgb' in ImageDataGenerator.flow_from_directory ('color_mode' attribute)
+             - or use PIL.Image.open('imgname.jpg').convert('RGB'))
 
 num_classes = 20
 

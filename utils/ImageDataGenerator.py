@@ -3,19 +3,18 @@
 
 import os
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing.image import ImageDataGenerator
 
 # Fix the seed for random operations
 # to make experiments reproducible.
 # ----------------------------------
-SEED = 123
-tf.random.set_seed(SEED)
+seed = 123
+tf.random.set_seed(seed)
 
 cwd = os.getcwd() # current working directory
 
-DATASET_DIR = os.path.join(cwd, 'dataset')
-TRAIN_DIR = os.path.join(DATASET_DIR, 'training')
-TEST_DIR = os.path.join(DATASET_DIR, 'test')
+dataset_dir = os.path.join(cwd, 'dataset')
+train_dir = os.path.join(dataset_dir, 'training')
 
 
 # Set GPU memory growth
@@ -28,38 +27,38 @@ TEST_DIR = os.path.join(DATASET_DIR, 'test')
 # Data Loading
 # ------------
 
-bs = 32 # batch size
+batch_size = 32  # (default)
 
-decide_class_indices = False
-
-if decide_class_indices:
-	class_list = ['owl',  				# 0
-				  'galaxy',  			# 1
-				  'lightning',  		# 2
-				  'wine-bottle',  		# 3
-				  't-shirt',  			# 4
-				  'waterfall', 			# 5
-				  'sword',  			# 6
-				  'school-bus',  		# 7
-				  'calculator',  		# 8
-				  'sheet-music',  		# 9
-				  'airplanes',  		# 10
-				  'lightbulb',  		# 11
-				  'skyscraper',  		# 12
-				  'mountain-bike',  	# 13
-				  'fireworks',  		# 14
-				  'computer-monitor',  	# 15
-				  'bear',  				# 16
-				  'grand-piano', 		# 17
-				  'kangaroo',  			# 18
-				  'laptop']  			# 19
-else:
-	class_list = None
+class_list = ['owl',  				# 0
+			  'galaxy',  			# 1
+			  'lightning',  		# 2
+			  'wine-bottle',  		# 3
+			  't-shirt',  			# 4
+			  'waterfall', 			# 5
+			  'sword',  			# 6
+			  'school-bus',  		# 7
+			  'calculator',  		# 8
+			  'sheet-music',  		# 9
+			  'airplanes',  		# 10
+			  'lightbulb',  		# 11
+			  'skyscraper',  		# 12
+			  'mountain-bike',  	# 13
+			  'fireworks',  		# 14
+			  'computer-monitor',  	# 15
+			  'bear',  				# 16
+			  'grand-piano', 		# 17
+			  'kangaroo',  			# 18
+			  'laptop']  			# 19
 
 
-# ImageDataGenerator objects (no data augmentation applied)
+# Image generators from directory
 
-VALID_SPLIT = 0.2 # fraction of images reserved for validation
+valid_split = 0.2 # fraction of images reserved for validation
+
+#@todo: which is the correct size for the images?
+img_w = 256
+img_h = 256
+
 
 train_datagen = ImageDataGenerator(rescale=1./255, # transforms every pixel value from range [0,255] -> [0,1]
                                    # shear_range=0.2,
@@ -67,55 +66,73 @@ train_datagen = ImageDataGenerator(rescale=1./255, # transforms every pixel valu
                                    # rotation_range=45,
                                    # horizontal_flip=True,
                                    # vertical_flip=True,
-                                   validation_split=VALID_SPLIT)
+                                   validation_split=valid_split)
 
-
-test_datagen = ImageDataGenerator(rescale=1./255,
-                                  validation_split=VALID_SPLIT)
-
-
-# Create generators to read images from dataset directory
-
-print('\ntrain_generator ... ')
-train_gen = train_datagen.flow_from_directory(TRAIN_DIR,
+print('\ntrain_gen ... ')
+train_gen = train_datagen.flow_from_directory(train_dir,
 											 subset='training', # subset of data
-											 batch_size=bs,
+											 batch_size=batch_size,
+											 target_size=(img_w, img_h), # images are automatically resized
+											 color_mode='rgb',
 											 classes=class_list,
 											 class_mode='categorical',
 											 shuffle=True,
-											 seed=SEED)
+											 seed=seed)
 
-print('\nvalid_generator ... ')
-valid_gen = train_datagen.flow_from_directory(TRAIN_DIR,
+print('\nvalid_gen ... ')
+valid_gen = train_datagen.flow_from_directory(train_dir,
 											 subset='validation',
-											 batch_size=bs,
+											 batch_size=batch_size,
+											 target_size=(img_w, img_h),
+											 color_mode='rgb',
 											 classes=class_list,
 											 class_mode='categorical',
 											 shuffle=False,
-											 seed=SEED)
+											 seed=seed)
 
 
-# target_size = c(256, 256), color_mode = "rgb", classes = NULL,
-# target_size = (128, 128) # img_width, img_height
-# Another benefit of this approach is that all the images are automatically resized according
-# to dimensions specified in the target_size argument. In the sample code above,
-# all images for both the training and test sets were resized to 128 x 128.
+test_datagen = ImageDataGenerator(rescale=1./255) #, validation_split=valid_split)
 
-print('\ntest_generator ... ')
-test_gen = test_datagen.flow_from_directory(TEST_DIR,
-											subset=None,
-											batch_size=bs,
-											classes=None,
-											# class_mode='categorical',
-											shuffle=False,
-											seed=SEED)
+# test directory doesn’t have subdirectories the classes of those images are unknown
+print('\ntest_gen ... ')
+test_gen= test_datagen.flow_from_directory(dataset_dir, 	# specify the parent dir of the test dir
+										  batch_size=batch_size,
+										  target_size=(img_w, img_h),
+										  color_mode='rgb',
+										  classes=['test'], # load the test “class”
+										  shuffle=False,
+										  seed=seed)
+# img shape
+images, labels = next(train_gen)
 
-# Variable img shape
-# print('img shape ... ')
-#
-# labels = next(train_generator)
-# num_classes = labels.shape[1]
-# print('num_classes', labels.shape[1])
+num_classes = labels.shape[1]
+channels = images.shape[3]
+
+print("num_classes", num_classes)
+print("channels", channels)
+
+
+# Create dataset objects
+train_dataset = tf.data.Dataset.from_generator(lambda: train_gen,  # generator
+											   output_types=(tf.float32, tf.float32),
+											   output_shapes=([None, img_h, img_w, channels], [None, num_classes]))
+train_dataset = train_dataset.repeat() # repeat
+
+
+valid_dataset = tf.data.Dataset.from_generator(lambda: valid_gen,
+											   output_types=(tf.float32, tf.float32),
+											   output_shapes=([None, img_h, img_w, channels], [None, num_classes]))
+valid_dataset = valid_dataset.repeat()  # repeat
+
+
+test_dataset = tf.data.Dataset.from_generator(lambda: test_gen,
+											  output_types=(tf.float32, tf.float32),
+											  output_shapes=([None, img_h, img_w, channels], [None, num_classes]))
+test_dataset = test_dataset.repeat()  # repeat
+
+# check the class labels
+print("class labels ...", train_gen.class_indices, end='\n')
+
 
 
 
