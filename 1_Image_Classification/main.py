@@ -4,6 +4,7 @@
 import os
 import tensorflow as tf
 
+
 # Fix the seed for random operations
 # to make experiments reproducible.
 # ----------------------------------
@@ -28,3 +29,18 @@ import tensorflow as tf
 #   except RuntimeError as e:
 #     # Memory growth must be set before GPUs have been initialized
 #     print(e, 'No GPUs found.')
+
+
+# Data Loading
+# ------------
+
+train_dataset, valid_dataset, test_dataset = image_data_generator()
+
+
+# Multi_class
+
+# CNN_classification
+
+# CNN_segmentation
+
+# Transfer_learning
