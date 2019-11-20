@@ -21,7 +21,7 @@ tf.random.set_seed(seed)
 
 # path to dataset
 cwd = os.getcwd()
-dataset_dir = os.path.join(cwd, '1_Image_Classification/dataset')
+dataset_dir = os.path.join(cwd, 'image_classification/dataset')
 train_dir = os.path.join(dataset_dir, 'training')
 
 # fraction of images reserved for validation
@@ -82,6 +82,7 @@ def setup_data_generator():
 												validation_split=valid_split)
 
 	# setup train and valid generators
+	# todo: create dataset_split.json file indicating how do you split the training set...
 	print('\ntrain_gen ... ')
 	train_gen = train_data_gen.flow_from_directory(train_dir,
 													   subset='training',  # subset of data
@@ -135,7 +136,7 @@ def setup_data_generator():
 	num_classes = labels.shape[1]
 	print("num_classes", num_classes)
 
-
+	# todo: is it necessary to create dataset objects? or work directly with the generators?
 	# Create dataset objects to retrieve
 	train_dataset = dataset_from_generator(train_gen)
 	train_dataset = train_dataset.repeat()
@@ -235,117 +236,3 @@ def create_multiclass_model():
 										kernel_regularizer=tf.keras.regularizers.l2(0.0001)))
 
 	return model
-
-
-
-
-# --------------------------
-# Multi-class Classification
-# --------------------------
-
-# Data loader
-# -----------
-
-train_dataset, valid_dataset, test_dataset, train_gen, valid_gen, test_gen = setup_data_generator()
-
-show_batch(train_dataset)
-
-
-
-# Create model
-# ------------
-
-model = create_multiclass_model()
-
-# Visualize created model as a table
-# model.summary()
-
-# Visualize initialized weights
-# print('model initial weights', model.weights)
-
-
-
-# Specify the training configuration (optimizer, loss, metrics)
-# -------------------------------------------------------------
-loss = tf.keras.losses.CategoricalCrossentropy() # loss function to minimize
-#
-lr = 1e-4 # learning rate
-optimizer = tf.keras.optimizers.Adam(learning_rate=lr) # stochastic gradient descent optimizer
-
-metrics = ['accuracy'] # validation metrics to monitor
-
-# # Compile Model
-model.compile(optimizer=optimizer,
-				loss=loss,
-				metrics=metrics)
-
-
-
-# Train the model
-# ---------------
-#@todo: check fit_generator
-epochs = 10
-
-step_size_train = train_gen.n // train_gen.batch_size  # num_train_samples/bs
-step_size_valid = valid_gen.n // valid_gen.batch_size
-
-history = model.fit_generator(generator= train_gen,
-								steps_per_epoch=step_size_train,
-								epochs=epochs,
-								validation_data=valid_gen, # validation generator
-								validation_steps=step_size_valid)
-								# callbacks=[checkpointer, stopper]
-							  	# shuffle=True)
-
-#The returned 'history' object holds a record of the loss values and metric values during training
-print('\nhistory dict:', history.history)
-
-
-# Evaluate the model
-# ----------
-
-# print('Evaluate model on test data ... ')
-# eval_out = model.evaluate_generator(generator=valid_gen,
-# 									 	steps=step_size_valid)
-#										verbose=0)
-
-# print('test loss, test acc:', eval_out)
-
-
-# Check Performance
-# print("Baseline: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))
-
-
-# Predict output
-# --------------
-
-# step_size_test = test_gen.n // test_gen.batch_size
-
-# reset the test_generator before whenever you call the predict_generator.
-# This is important, if you forget to reset the test_generator you will get outputs in a weird order.
-# test_gen.reset()
-#
-# pred = model.predict_generator(generator=test_gen,
-# 									steps=step_size_test,
-# 									verbose=1)
-#
-#
-# predicted_class_indices=np.argmax(pred,axis=1) # predicted abels
-
-
-# and most importantly you need to map the predicted labels with their unique ids
-# such as filenames to find out what you predicted for which image.
-
-# labels = (train_gen.class_indices)
-# labels = dict((v,k) for k,v in labels.items())
-# predictions = [labels[k] for k in predicted_class_indices]
-
-
-# save results in a csv file
-# import pandas as pd
-#
-# image_filenames = test_gen.filenames
-#
-# results = pd.DataFrame({"Filename": image_filenames,
-# 						   "Predictions": predictions})
-# results.to_csv("results.csv", index=False)
