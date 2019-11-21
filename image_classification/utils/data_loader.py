@@ -3,29 +3,43 @@
 
 import os
 import tensorflow as tf
+import split_folders
 from keras.preprocessing.image import ImageDataGenerator
-import numpy as np
 
-# Global config params  @todo: create config dic with params
-# -------------------
-						# Parameters
-						# params = {'dim': (32,32,32),
-						#           'batch_size': 64,
-						#           'num_classes': 6,
-						#           'n_channels': 1,
-						#           'shuffle': True}
 
 # fix the seed for random operations to make experiments reproducible
+
 seed = 123
 tf.random.set_seed(seed)
 
 # path to dataset
+
 cwd = os.getcwd()
 dataset_dir = os.path.join(cwd, 'image_classification/dataset')
-train_dir = os.path.join(dataset_dir, 'training')
 
-# fraction of images reserved for validation
-valid_split = 0.2 # 20%
+input_dir = os.path.join(dataset_dir, 'training')
+dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
+
+
+valid_split = 0.2 # fraction of images reserved for validation
+
+# split into training and validation sets using a ratio . e.g. for train/val `.8 .2`.
+split_folders.ratio(input_dir,
+					output=dataset_split_dir,
+					seed=seed,
+					ratio=(1-valid_split, valid_split))
+
+
+
+# todo: create config dic with params
+
+# Parameters
+# params = {'dim': (32,32,32),
+#           'batch_size': 64,
+#           'num_classes': 6,
+#           'n_channels': 1,
+#           'shuffle': True}
+
 
 # image size @todo: which is the correct size for the images?
 img_w = 256
@@ -40,75 +54,72 @@ bs = 32  # (default)
 # number of classes
 num_classes = 20
 
-class_list = ['owl',  # 0
-			  'galaxy',  # 1
-			  'lightning',  # 2
-			  'wine-bottle',  # 3
-			  't-shirt',  # 4
-			  'waterfall',  # 5
-			  'sword',  # 6
-			  'school-bus',  # 7
-			  'calculator',  # 8
-			  'sheet-music',  # 9
-			  'airplanes',  # 10
-			  'lightbulb',  # 11
-			  'skyscraper',  # 12
-			  'mountain-bike',  # 13
-			  'fireworks',  # 14
-			  'computer-monitor',  # 15
-			  'bear',  # 16
-			  'grand-piano',  # 17
-			  'kangaroo',  # 18
-			  'laptop']  # 19
+class_list = ['owl',  				# 0
+			  'galaxy',  			# 1
+			  'lightning',  		# 2
+			  'wine-bottle',  		# 3
+			  't-shirt',  			# 4
+			  'waterfall',  		# 5
+			  'sword',  			# 6
+			  'school-bus',  		# 7
+			  'calculator',  		# 8
+			  'sheet-music',  		# 9
+			  'airplanes',  		# 10
+			  'lightbulb',  		# 11
+			  'skyscraper',  		# 12
+			  'mountain-bike',  	# 13
+			  'fireworks',  		# 14
+			  'computer-monitor',  	# 15
+			  'bear',  				# 16
+			  'grand-piano',  		# 17
+			  'kangaroo',  			# 18
+			  'laptop']  			# 19
+
 
 
 # Create image generators from directory
-# --------------------------------
+# --------------------------------------
 def setup_data_generator():
 	apply_data_augmentation = False
 
-	# define data augmentation configuration for training data
-	if apply_data_augmentation:
-		# Train and Validation
-		train_data_gen = ImageDataGenerator(rescale=1. / 255, # every pixel value from range [0,255] -> [0,1]
-												shear_range=0.2,
-												zoom_range=0.2,
-												rotation_range=45,
-												horizontal_flip=True,
-												vertical_flip=True,
-												validation_split=valid_split)
-	else:
-		train_data_gen = ImageDataGenerator(rescale=1. / 255,
-												validation_split=valid_split)
+	# define data augmentation configuration
 
-	# setup train and valid generators
-	# todo: create dataset_split.json file indicating how do you split the training set...
+	if apply_data_augmentation:
+
+		train_data_gen = ImageDataGenerator(rescale=1. / 255, #revery pixel value from range [0,255] -> [0,1]
+											shear_range=0.2,
+											zoom_range=0.2,
+											rotation_range=45,
+											horizontal_flip=True,
+											vertical_flip=True)
+	else:
+		train_data_gen = ImageDataGenerator(rescale=1. / 255)
+
+	valid_data_gen = ImageDataGenerator(rescale=1. / 255)
+	test_data_gen = ImageDataGenerator(rescale=1. / 255)
+
+
+	# setup generators
+
 	print('\ntrain_gen ... ')
-	train_gen = train_data_gen.flow_from_directory(train_dir,
-													   subset='training',  # subset of data
-													   batch_size=bs,
-													   target_size=(img_w, img_h),  # images are automatically resized
-													   color_mode='rgb',
-													   classes=class_list,
-													   class_mode='categorical',
-													   shuffle=True,
-													   seed=seed)
+	train_gen = train_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'train'),
+												   batch_size=bs,
+												   target_size=(img_w, img_h),  # images are automatically resized
+												   color_mode='rgb',  # read all pictures as rgb
+												   classes=class_list,
+												   class_mode='categorical',
+												   shuffle=True,
+												   seed=seed)
 
 	print('\nvalid_gen ... ')
-	valid_gen = train_data_gen.flow_from_directory(train_dir,
-												  subset='validation',
-													  batch_size=bs,
-													  target_size=(img_w, img_h),
-													  color_mode='rgb',
-													  classes=class_list,
-													  class_mode='categorical',
-													  shuffle=False,
-													  seed=seed)
-
-
-
-	# define data augmentation configuration for test data
-	test_data_gen = ImageDataGenerator(rescale=1. / 255)  # , validation_split=validation_split)
+	valid_gen = valid_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'valid'),
+												   batch_size=bs,
+												   target_size=(img_w, img_h),
+												   color_mode='rgb',
+												   classes=class_list,
+												   class_mode='categorical',
+												   shuffle=False,
+												   seed=seed)
 
 
 	print('\ntest_gen ... ')
@@ -122,6 +133,10 @@ def setup_data_generator():
 												    # and match them with their unique ids or filenames
 													shuffle=False,
 													seed=seed)
+
+
+	# todo: create dataset_split.json file indicating how do you split the training set...
+
 
 	# get config params from train generator
 	images, labels = next(train_gen)
