@@ -39,19 +39,19 @@ data.show_batch(train_generator)
 
 
 ##----------##
-# x = tf.keras.Input(shape=[256, 256])  # input tensor
-#
-# flatten = tf.keras.layers.Flatten()(x)
-# h = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.sigmoid)(flatten)  # hidden layers
-# #output layer:probabccc of belonging to each class
-# out = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.softmax)(h)
-# model = tf.keras.Model(inputs=x, outputs=out)
-#
+x = tf.keras.Input(shape=[256, 256])  # input tensor
+
+flatten = tf.keras.layers.Flatten()(x)
+h = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.sigmoid)(flatten)  # hidden layers
+#output layer:probabccc of belonging to each class
+out = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.softmax)(h)
+model = tf.keras.Model(inputs=x, outputs=out)
+
 
 
 # Visualize created model as a table
-# model.summary()
-# print('model initial weights', model.weights)
+model.summary()
+print('model initial weights', model.weights)
 
 
 
@@ -147,6 +147,7 @@ print('\nhistory dict:', fit_model.history)
 # --------------
 
 # step_size_test = test_gen.n // test_gen.batch_size
+    
 
 # reset the test_generator before whenever you call the predict_generator.
 # This is important, if you forget to reset the test_generator you will get outputs in a weird order.
