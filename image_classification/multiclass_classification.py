@@ -5,9 +5,8 @@ import tensorflow as tf
 
 import utils.data_loader as data
 
-
 # -------------------------------------- #
-	### Multi-class Classification ###
+### Multi-class Classification ###
 # -------------------------------------- #
 
 
@@ -15,7 +14,6 @@ import utils.data_loader as data
 # ----------------------------------
 seed = 123
 tf.random.set_seed(seed)
-
 
 # todo: gpu management
 # Set GPU memory growth
@@ -27,7 +25,6 @@ tf.random.set_seed(seed)
 train_generator, valid_generator, test_generator = data.setup_data_generator()
 
 data.show_batch(train_generator)
-
 
 # Create model
 # ------------
@@ -43,33 +40,27 @@ x = tf.keras.Input(shape=[256, 256])  # input tensor
 
 flatten = tf.keras.layers.Flatten()(x)
 h = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.sigmoid)(flatten)  # hidden layers
-#output layer:probabccc of belonging to each class
+# output layer:probabccc of belonging to each class
 out = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.softmax)(h)
 model = tf.keras.Model(inputs=x, outputs=out)
-
-
 
 # Visualize created model as a table
 model.summary()
 print('model initial weights', model.weights)
 
-
-
 # Specify the training configuration (optimizer, loss, metrics)
 # -------------------------------------------------------------
-loss = tf.keras.losses.CategoricalCrossentropy() # loss function to minimize
+loss = tf.keras.losses.CategoricalCrossentropy()  # loss function to minimize
 
-lr = 1e-4 # learning rate
-optimizer = tf.keras.optimizers.Adam(learning_rate=lr) # stochastic gradient descent optimizer
+lr = 1e-4  # learning rate
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr)  # stochastic gradient descent optimizer
 
-metrics = ['accuracy'] # validation metrics to monitor
+metrics = ['accuracy']  # validation metrics to monitor
 
 # Compile Model
 model.compile(optimizer=optimizer,
-				loss=loss,
-				metrics=metrics)
-
-
+              loss=loss,
+              metrics=metrics)
 
 # Train the model
 # ---------------
@@ -80,13 +71,13 @@ model.compile(optimizer=optimizer,
 # step_size_valid = valid_gen.n // valid_gen.batch_size
 #
 # fit_model = model.fit_generator(generator= train_gen,
-# 								steps_per_epoch=step_size_train,
-# 								epochs=epochs,
-# 								validation_data=valid_gen, # validation generator
-# 								validation_steps=step_size_valid)
-# 								# callbacks=[checkpointer, stopper]
-# 							  	# shuffle=True)
-
+#                                 steps_per_epoch=step_size_train,
+#                                 epochs=epochs,
+#                                 validation_data=valid_gen, # validation generator
+#                                 validation_steps=step_size_valid)
+#                                 # callbacks=[checkpointer, stopper]
+#                                   # shuffle=True)
+#
 
 # example
 # model.fit_generator(
@@ -97,23 +88,21 @@ model.compile(optimizer=optimizer,
 #     epochs = nb_epochs)
 
 fit_model = model.fit_generator(train_generator,
-								steps_per_epoch=2000,
-								epochs=50,
-								validation_data=valid_generator,
-								validation_steps=800)
-
+                                steps_per_epoch=2000,
+                                epochs=50,
+                                validation_data=valid_generator,
+                                validation_steps=800)
 
 # history lds a record of the loss values and metric values during training
 print('\nhistory dict:', fit_model.history)
-
 
 # Evaluate the model
 # ----------
 
 # print('Evaluate model on test data ... ')
 # eval_out = model.evaluate_generator(generator=valid_gen,
-# 									 	steps=step_size_valid)
-#										verbose=0)
+#                                          steps=step_size_valid)
+#                                        verbose=0)
 
 # print('test loss, test acc:', eval_out)
 
@@ -147,15 +136,15 @@ print('\nhistory dict:', fit_model.history)
 # --------------
 
 # step_size_test = test_gen.n // test_gen.batch_size
-    
+
 
 # reset the test_generator before whenever you call the predict_generator.
 # This is important, if you forget to reset the test_generator you will get outputs in a weird order.
 # test_gen.reset()
 #
 # pred = model.predict_generator(generator=test_gen,
-# 									steps=step_size_test,
-# 									verbose=1)
+#                                     steps=step_size_test,
+#                                     verbose=1)
 #
 #
 # predicted_class_indices=np.argmax(pred,axis=1) # predicted abels
@@ -175,7 +164,5 @@ print('\nhistory dict:', fit_model.history)
 # image_filenames = test_gen.filenames
 #
 # results = pd.DataFrame({"Filename": image_filenames,
-# 						   "Predictions": predictions})
+#                            "Predictions": predictions})
 # results.to_csv("results.csv", index=False)
-
-
