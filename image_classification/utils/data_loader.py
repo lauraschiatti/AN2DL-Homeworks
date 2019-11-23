@@ -26,7 +26,7 @@ valid_split = 0.2 # fraction of images reserved for validation
 # split into training and validation sets using a ratio . e.g. for train/val `.8 .2`.
 split_folders.ratio(input_dir,
 					output=dataset_split_dir,
-					seed=seed,
+					seed=seed, # allows to reproduce the split
 					ratio=(1-valid_split, valid_split))
 
 
@@ -102,7 +102,7 @@ def setup_data_generator():
 	# setup generators
 
 	print('\ntrain_gen ... ')
-	train_gen = train_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'train'),
+	train_generator = train_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'train'),
 												   batch_size=bs,
 												   target_size=(img_w, img_h),  # images are automatically resized
 												   color_mode='rgb',  # read all pictures as rgb
@@ -112,7 +112,7 @@ def setup_data_generator():
 												   seed=seed)
 
 	print('\nvalid_gen ... ')
-	valid_gen = valid_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'valid'),
+	valid_generator = valid_data_gen.flow_from_directory(os.path.join(dataset_split_dir, 'val'),
 												   batch_size=bs,
 												   target_size=(img_w, img_h),
 												   color_mode='rgb',
@@ -124,7 +124,7 @@ def setup_data_generator():
 
 	print('\ntest_gen ... ')
 	# test directory doesn’t have subdirectories the classes of those images are unknown
-	test_gen = test_data_gen.flow_from_directory(dataset_dir,  # specify the parent dir of the test dir
+	test_generator = test_data_gen.flow_from_directory(dataset_dir,  # specify the parent dir of the test dir
 													batch_size=bs,
 													target_size=(img_w, img_h),
 													color_mode='rgb',
@@ -139,7 +139,7 @@ def setup_data_generator():
 
 
 	# get config params from train generator
-	images, labels = next(train_gen)
+	images, labels = next(train_generator)
 
 	global num_classes, channels
 
@@ -151,24 +151,30 @@ def setup_data_generator():
 	num_classes = labels.shape[1]
 	print("num_classes", num_classes)
 
+	return train_generator, valid_generator, test_generator
+
+# Create dataset objects from generators
+# --------------------------------------
+def setup_dataset():
+
 	# todo: is it necessary to create dataset objects? or work directly with the generators?
-	# Create dataset objects to retrieve
-	train_dataset = dataset_from_generator(train_gen)
+	train_generator, valid_generator, test_generator = setup_data_generator()
+
+	train_dataset = dataset_from_generator(train_generator)
 	train_dataset = train_dataset.repeat()
-
-	valid_dataset = dataset_from_generator(valid_gen)
+	
+	valid_dataset = dataset_from_generator(valid_generator)
 	valid_dataset = valid_dataset.repeat()
-
-	test_dataset = dataset_from_generator(test_gen)
+	
+	test_dataset = dataset_from_generator(test_generator)
 	test_dataset = test_dataset.repeat()
 
+	return train_dataset, valid_dataset, test_dataset
 
-	return train_dataset, valid_dataset, test_dataset, train_gen, valid_gen, test_gen
 
-
-# Create dataset objects
+# Create dataset from generator
 # -----------------------
-def dataset_from_generator(generator):
+def dataset_from_generator(generator,img_h, img_w, channels, num_classes):
 	dataset = tf.data.Dataset.from_generator(lambda: generator,
 											 output_types=(tf.float32, tf.float32),
 											 output_shapes=([None, img_h, img_w, channels], [None, num_classes]))
@@ -177,12 +183,12 @@ def dataset_from_generator(generator):
 
 # Iterate Dataset object to access samples inside it
 # --------------------------------------------------
-def show_batch(train_dataset):
+def show_batch(train_data):
 
 	import matplotlib.pyplot as plt
 	import numpy as np
 
-	iterator = iter(train_dataset)
+	iterator = iter(train_data)
 	image_batch, label_batch = next(iterator)
 
 	plt.figure() #figsize=(10, 10))
@@ -203,7 +209,7 @@ def show_batch(train_dataset):
 	plt.show()  # show the figure
 
 
-def create_multiclass_model():
+def create_keras_model():
 	which_model = 'base_weight_decay'
 	# set_which_model(which_model)  # set model for training_callbacks
 
