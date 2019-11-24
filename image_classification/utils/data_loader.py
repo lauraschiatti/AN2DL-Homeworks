@@ -18,6 +18,7 @@ dataset_dir = os.path.join(cwd, 'image_classification/dataset')
 
 input_dir = os.path.join(dataset_dir, 'training')
 dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
+test_dir = os.path.join(dataset_dir, 'test')
 
 # 80% training, 20% validation
 valid_split = 0.2

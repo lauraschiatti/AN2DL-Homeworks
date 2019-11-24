@@ -6,8 +6,11 @@ import tensorflow as tf
 # from keras import Input, activations, Model, losses, optimizers, Sequential
 # import tensorflow.keras as k
 import matplotlib.pyplot as plt
+from PIL import Image
+import os
 
-from image_classification.utils import data_loader as data
+from utils import data_loader as data
+from create_submission_file import create_csv
 
 # -------------------------------------- #
 ### Multi-class Classification ###
@@ -134,6 +137,42 @@ plt.title('Training and validation loss')
 plt.legend()
 
 plt.show()
+
+
+
+# Compute predictions (probabilities -- the output of the last layer)
+# -------------------
+
+predictions = input('\nCompute and save predictions?: '
+                    'y - Yes  n - No\n')
+
+if predictions == 'y':
+    print('\n# Generate predictions for pictures ... ')
+    test_dir = data.test_dir
+    image_filenames = next(os.walk(test_dir))
+
+    results = {}
+
+    for image_name in image_filenames:
+        img = Image.open(test_dir + '/' + image_name).convert('RGB') # open into RGB mode
+        img_array = np.array(img)
+        img_array = np.expand_dims(img_array, 0)
+
+        # data_normalization
+        out_softmax = model.predict(x=img_array / 255.)
+
+        prediction = tf.argmax(out_softmax)  # predicted class
+        results[image_name] = prediction
+
+# create_csv(results)
+
+
+# Prints the nicely formatted dictionary
+import pprint
+pprint.pprint(results)
+
+
+
 """
 # Predict output
 # --------------
@@ -150,20 +189,4 @@ plt.show()
 #
 #
 # predicted_class_indices=np.argmax(pred,axis=1) # predicted labels
-
-# and most importantly you need to map the predicted labels with their unique ids
-# such as filenames to find out what you predicted for which image.
-
-# labels = (train_gen.class_indices)
-# labels = dict((v,k) for k,v in labels.items())
-# predictions = [labels[k] for k in predicted_class_indices]
-
-# save results in a csv file
-# import pandas as pd
-#
-# image_filenames = test_gen.filenames
-#
-# results = pd.DataFrame({"Filename": image_filenames,
-#                            "Predictions": predictions})
-# results.to_csv("results.csv", index=False)
 """
