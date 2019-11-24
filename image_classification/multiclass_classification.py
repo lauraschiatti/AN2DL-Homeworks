@@ -7,9 +7,10 @@ import tensorflow as tf
 # import tensorflow.keras as k
 import matplotlib.pyplot as plt
 from PIL import Image
+from pprint import pprint
 import os
 
-from utils import data_loader as data
+from image_classification.utils import data_loader as data
 from create_submission_file import create_csv
 
 # -------------------------------------- #
@@ -33,7 +34,7 @@ tf.random.set_seed(seed)
 # We decided to use se Sequential model because it is simpler
 
 sequential_model = True
-x_shape = (256, 256, 3)
+x_shape = (data.img_h, data.img_w, data.channels)
 hidden_layer_units = 100
 hidden_layers_activation = tf.keras.activations.tanh
 
@@ -96,15 +97,15 @@ if with_early_stop:
                                          patience=epochs * 0.2))
 
 # early stop with patience of 20% the epochs
-fit_model = model.fit(train_dataset,
-                      epochs=epochs,
-                      steps_per_epoch=800,
-                      callbacks=callbacks,
-                      validation_data=valid_dataset,
-                      validation_steps=200)
+trained_model = model.fit(train_dataset,
+                          epochs=epochs,
+                          steps_per_epoch=800,
+                          callbacks=callbacks,
+                          validation_data=valid_dataset,
+                          validation_steps=200)
 #
 # # history lds a record of the loss values and metric values during training
-print('\nhistory dict:', fit_model.history)
+print('\nhistory dict:', trained_model.history)
 
 # Evaluate the model
 # ----------
@@ -117,10 +118,10 @@ print('test loss:', eval_out)
 # print("Baseline: %.2f%% (%.2f%%)" %
 #       (results.mean() * 100, results.std() * 100))
 
-accuracy = fit_model.history['accuracy']
-validation_accuracy = fit_model.history['val_accuracy']
-loss = fit_model.history['loss']
-validation_loss = fit_model.history['val_loss']
+accuracy = trained_model.history['accuracy']
+validation_accuracy = trained_model.history['val_accuracy']
+loss = trained_model.history['loss']
+validation_loss = trained_model.history['val_loss']
 
 epochs = range(len(accuracy))
 
@@ -138,41 +139,34 @@ plt.legend()
 
 plt.show()
 
-
-
 # Compute predictions (probabilities -- the output of the last layer)
 # -------------------
 
-predictions = input('\nCompute and save predictions?: '
-                    'y - Yes  n - No\n')
+# predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
-if predictions == 'y':
-    print('\n# Generate predictions for pictures ... ')
-    test_dir = data.test_dir
-    image_filenames = next(os.walk(test_dir))
+results = {}
 
-    results = {}
+# if predictions == 'y':
+print('\n# Generate predictions for pictures ... ')
+test_dir = data.test_dir
+image_filenames = next(os.walk(test_dir))
 
-    for image_name in image_filenames:
-        img = Image.open(test_dir + '/' + image_name).convert('RGB') # open into RGB mode
-        img_array = np.array(img)
-        img_array = np.expand_dims(img_array, 0)
+for filename in image_filenames[2]:
+    # convert the image to RGB
+    img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
+    img_array = np.array(img)
+    img_array = np.expand_dims(img_array, 0)
 
-        # data_normalization
-        out_softmax = model.predict(x=img_array / 255.)
-
-        prediction = tf.argmax(out_softmax)  # predicted class
-        results[image_name] = prediction
+    # data_normalization
+    out_softmax = model.predict(x=img_array / 255.)
+    # predicted class
+    prediction = tf.argmax(out_softmax)
+    results[filename] = prediction
 
 # create_csv(results)
 
-
 # Prints the nicely formatted dictionary
-import pprint
-pprint.pprint(results)
-
-
-
+pprint(results)
 """
 # Predict output
 # --------------
