@@ -5,9 +5,9 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image
-
 from utils import data_loader as data
 from CNNClassifier import CNNClassifier
+
 # -------------------------------------- #
 ### CNN Classification ###
 # -------------------------------------- #
@@ -24,7 +24,8 @@ cwd = os.getcwd()
 
 # Data loader
 # -----------
-(train_generator, valid_generator, test_generator) = data.setup_data_generator()
+(train_generator, valid_generator,
+ test_generator) = data.setup_data_generator()
 # data.show_batch(train_generator)
 
 (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
@@ -90,9 +91,7 @@ eval_out = model.evaluate(x=test_generator,
 print('eval_out', eval_out)
 
 # Check Performance
-# print('Baseline: %.2f%% (%.2f%%)' %
-#       (results.mean() * 100, results.std() * 100))
-
+# test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
 accuracy = trained_model.history['accuracy']
 validation_accuracy = trained_model.history['val_accuracy']
@@ -107,7 +106,7 @@ plt.plot(epochs, loss, 'b', label='Training loss')
 plt.plot(epochs, validation_loss, 'r', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend(['training', 'validation'], loc='upper right')
-plt.show()
+# plt.show()
 
 # # Visualize History for Accuracy.
 plt.title('Model accuracy')
@@ -115,7 +114,7 @@ plt.plot(epochs, accuracy, 'b', label='Training acc')
 plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
 plt.title('Training and validation accuracy')
 plt.legend(['training', 'validation'], loc='lower right')
-plt.show()
+# plt.show()
 
 # Compute predictions (probabilities -- the output of the last layer)
 # -------------------
@@ -134,33 +133,35 @@ if predictions == 'y':
     for filename in image_filenames:
         print('labeling ' + filename)
 
-        # convert to RGB and resize images
+        # load image
         target_size = (data.img_w, data.img_h)
-        img = Image.open(os.path.join(test_dir, filename)).convert('RGB').resize(target_size)
+        img = Image.open(os.path.join(test_dir, filename)).convert('RGB') # open as RGB
 
         # image size
         # width, height = img.size
-        # print(str(width) + 'x' + str(height))o
+        # print(str(width) + 'x' + str(height))
 
-        img_array = np.array(img)
+        newsize = (256, 256)
+        img = img.resize(newsize)
+
+        img_array = np.array(img) # convert to array
         img_array = np.expand_dims(img_array, axis=0)
 
-        out_softmax = model.predict(x=img_array / 255.) # data_normalization
+        # data normalization
+        softmax = model.predict(x=img_array / 255.)
+        # print('predictions probabs:', softmax.tolist())
 
         # Get predicted class as the index corresponding to the maximum value in the vector probability
-        # probabilities = tf.nn.softmax(logits)
-        #
-        # predicted_indices = tf.argmax(probabilities, 1)
-        # predicted_class = tf.gather(TARGET_LABELS, predicted_indices)
+        prediction = tf.argmax(softmax, axis=1)
 
-        predicted_class = tf.argmax(out_softmax, axis=1)
-        # predicted_class = tf.gather(TARGET_LABELS, predicted_indices)
         # predicted_class = predicted_class[0]
 
-        results[filename] = predicted_class
 
 
-# data.create_csv(results)
+        results[filename] = prediction
+
+
+# create_csv(results)
 
 # Prints the nicely formatted dictionary
 from pprint import pprint
