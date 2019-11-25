@@ -28,13 +28,13 @@ cwd = os.getcwd()
  test_generator) = data.setup_data_generator()
 # data.show_batch(train_generator)
 
-(train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
+# (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
 
 # Create CNN model
 # ------------
 
-depth = 5
-num_filters = 8
+depth = 8
+num_filters = 10
 
 # Create Model instance
 model = CNNClassifier(depth=depth,
@@ -45,10 +45,10 @@ model = CNNClassifier(depth=depth,
 model.build(input_shape=(None, data.img_h, data.img_w, data.channels))
 
 # Visualize created model as a table
-model.feature_extractor.summary()
+# model.feature_extractor.summary()
 
 # Visualize initialized weights
-print('initial model weights', model.weights)
+# print('initial model weights', model.weights)
 
 # Prepare the model for training
 # ------------------------------
@@ -65,28 +65,28 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # Training with callbacks
 # -----------------------
 
-with_early_stop = False
-epochs = 1
+with_early_stop = True
+epochs = 10
 
 callbacks = []
 if with_early_stop:
     callbacks.append(
         tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                         patience=epochs * 0.2))
+                                         patience=epochs * 0.3))
 
 trained_model = model.fit_generator(generator=train_generator,
                                     epochs=epochs,
                                     steps_per_epoch=len(train_generator),
-                                    validation_data=valid_dataset,
+                                    validation_data=valid_generator,
                                     validation_steps=len(valid_generator))
 
 # Model evaluation
 # ----------------
 # model.load_weights('/path/to/checkpoint')  # use this if you want to restore saved model
 
-eval_out = model.evaluate(x=test_generator,
-                          steps=len(test_generator),
-                          verbose=0)
+eval_out = model.evaluate_generator(valid_generator,
+                                    steps=len(valid_generator),
+                                    verbose=0)
 
 print('eval_out', eval_out)
 
@@ -119,57 +119,75 @@ plt.legend(['training', 'validation'], loc='lower right')
 # Compute predictions (probabilities -- the output of the last layer)
 # -------------------
 
-predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
+# predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
+newsize = (256, 256)  # target_size
 results = {}
 
+test_dir = data.test_dir
+image_filenames = next(os.walk(test_dir))
 
-if predictions == 'y':
+# test only one image
+for filename in image_filenames[2][:1]:
+    # convert the image to RGB
+    img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
+    # resize the image
+    img = img.resize(newsize)
 
-    print('\n# Labeling test images ... ')
-    test_dir = data.test_dir
-    image_filenames = next(os.walk(test_dir))[2]
+    # data_normalization - convert to array
+    img_array = np.array(img)
+    img_array = np.expand_dims(img_array, axis=0)
 
-    for filename in image_filenames[0:10]:
-        print('labeling ' + filename)
+    print("predict for %s...\n" % filename)
+    predictions = model.predict(img_array * 1 / 255.)
+    results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
 
-        # load image
-        target_size = (data.img_w, data.img_h)
-        img = Image.open(os.path.join(test_dir, filename)).convert('RGB') # open as RGB
-
-        # image size
-        # width, height = img.size
-        # print(str(width) + 'x' + str(height))
-
-        newsize = (256, 256) # target_size
-        img = img.resize(newsize)
-
-        img_array = np.array(img) # convert to array
-        img_array = np.expand_dims(img_array, axis=0)
-
-        # use predict_generator() is inferring the labels
-        # from the directory structure of training data.
-
-        # softmax = model.predict(x=img_array / 255.)      # data normalization
-        # print('predictions probabs:', softmax.tolist())
-
-        # Get predicted class as the index corresponding to the maximum value in the vector probability
-        # prediction = tf.argmax(softmax, axis=-1) # multiple categories
-
-        # predicted_class = predicted_class[0]
-
-        # results[filename] = prediction
-
-        # todo: with generator
-        predictions = model.predict_generator(test_generator)
-        predictions = np.argmax(predictions, axis=-1)  # multiple categories
-        # label_map = (train_generator.class_indices)
-        # label_map = dict((v, k) for k, v in label_map.items())  # flip k,v
-        # predictions = [label_map[k] for k in predictions]
-
-        results[filename] = predictions
-
-
+#
+# if predictions == 'y':
+#
+#     print('\n# Labeling test images ... ')
+#     test_dir = data.test_dir
+#     image_filenames = next(os.walk(test_dir))[2]
+#
+#     for filename in image_filenames[:10]:
+#         print('labeling ' + filename)
+#
+#         # load image
+#         target_size = (data.img_w, data.img_h)
+#         # convert the image to RGB
+#         img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
+#         # resize the image
+#         img = img.resize(newsize)
+#
+#         # data_normalization - convert to array
+#         img_array = np.array(img)
+#         img_array = np.expand_dims(img_array, axis=0)
+#
+#         # use predict_generator() is inferring the labels
+#         # from the directory structure of training data.
+#
+#         # softmax = model.predict(x=img_array / 255.)      # data normalization
+#         # print('predictions probabs:', softmax.tolist())
+#
+#         # Get predicted class as the index corresponding to the maximum value in the vector probability
+#         # prediction = tf.argmax(softmax, axis=-1) # multiple categories
+#
+#         # predicted_class = predicted_class[0]
+#
+#         # results[filename] = prediction
+#
+#         print("predict for %s...\n" % filename)
+#         predictions = model.classifier.predict(img_array)
+#         results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
+#
+#         # todo: with generatory
+#         # predictions = model.predict_generator(test_generator)
+#         # predictions = np.argmax(predictions, axis=-1)
+#         # label_map = (train_generator.class_indices)
+#         # label_map = dict((v, k) for k, v in label_map.items())  # flip k,v
+#         # predictions = [label_map[k] for k in predictions]
+#
+#         results[filename] = predictions
 
 # create_csv(results)
 
