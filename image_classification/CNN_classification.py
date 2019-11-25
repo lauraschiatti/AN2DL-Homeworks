@@ -130,7 +130,7 @@ if predictions == 'y':
     test_dir = data.test_dir
     image_filenames = next(os.walk(test_dir))[2]
 
-    for filename in image_filenames:
+    for filename in image_filenames[0:10]:
         print('labeling ' + filename)
 
         # load image
@@ -141,24 +141,34 @@ if predictions == 'y':
         # width, height = img.size
         # print(str(width) + 'x' + str(height))
 
-        newsize = (256, 256)
+        newsize = (256, 256) # target_size
         img = img.resize(newsize)
 
         img_array = np.array(img) # convert to array
         img_array = np.expand_dims(img_array, axis=0)
 
-        # data normalization
-        softmax = model.predict(x=img_array / 255.)
+        # use predict_generator() is inferring the labels
+        # from the directory structure of training data.
+
+        # softmax = model.predict(x=img_array / 255.)      # data normalization
         # print('predictions probabs:', softmax.tolist())
 
         # Get predicted class as the index corresponding to the maximum value in the vector probability
-        prediction = tf.argmax(softmax, axis=1)
+        # prediction = tf.argmax(softmax, axis=-1) # multiple categories
 
         # predicted_class = predicted_class[0]
 
+        # results[filename] = prediction
 
+        # todo: with generator
+        predictions = model.predict_generator(test_generator)
+        predictions = np.argmax(predictions, axis=-1)  # multiple categories
+        # label_map = (train_generator.class_indices)
+        # label_map = dict((v, k) for k, v in label_map.items())  # flip k,v
+        # predictions = [label_map[k] for k in predictions]
 
-        results[filename] = prediction
+        results[filename] = predictions
+
 
 
 # create_csv(results)
