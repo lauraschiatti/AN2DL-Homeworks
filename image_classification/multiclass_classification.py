@@ -2,16 +2,12 @@
 
 import numpy as np
 import tensorflow as tf
-# from keras.layers import Flatten, Dense, Activation
-# from keras import Input, activations, Model, losses, optimizers, Sequential
-# import tensorflow.keras as k
 import matplotlib.pyplot as plt
 from PIL import Image
 from pprint import pprint
 import os
 
-from image_classification.utils import data_loader as data
-from create_submission_file import create_csv
+from utils import data_loader as data
 
 # -------------------------------------- #
 ### Multi-class Classification ###
@@ -22,12 +18,17 @@ from create_submission_file import create_csv
 seed = 123
 tf.random.set_seed(seed)
 
+# Parameters
+hidden_layer_units = 512
+epochs = 10
+
 # Data loader
 # -----------
-# (train_generator, valid_generator, test_generator) = data.setup_data_generator()
+(train_generator, valid_generator,
+ test_generator) = data.setup_data_generator()
 # data.show_batch(train_generator)
 
-(train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
+# (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
 
 # Create model
 # ------------
@@ -35,7 +36,6 @@ tf.random.set_seed(seed)
 
 sequential_model = True
 x_shape = (data.img_h, data.img_w, data.channels)
-hidden_layer_units = 100
 hidden_layers_activation = tf.keras.activations.tanh
 
 if sequential_model:
@@ -88,7 +88,6 @@ model.compile(optimizer=adam_optimizer,
 # Train the model
 # ---------------
 with_early_stop = True
-epochs = 10
 
 callbacks = []
 if with_early_stop:
@@ -97,12 +96,12 @@ if with_early_stop:
                                          patience=epochs * 0.2))
 
 # early stop with patience of 20% the epochs
-trained_model = model.fit(train_dataset,
-                          epochs=epochs,
-                          steps_per_epoch=800,
-                          callbacks=callbacks,
-                          validation_data=valid_dataset,
-                          validation_steps=200)
+trained_model = model.fit_generator(generator=train_generator,
+                                    epochs=epochs,
+                                    steps_per_epoch=800,
+                                    callbacks=callbacks,
+                                    validation_data=valid_generator,
+                                    validation_steps=200)
 #
 # # history lds a record of the loss values and metric values during training
 print('\nhistory dict:', trained_model.history)
@@ -111,7 +110,7 @@ print('\nhistory dict:', trained_model.history)
 # ----------
 
 print('Evaluate model on test data ... ')
-eval_out = model.evaluate(valid_dataset, steps=200, verbose=1)
+eval_out = model.evaluate_generator(valid_generator, steps=200, verbose=1)
 print('test loss:', eval_out)
 
 # Check Performance
@@ -145,23 +144,26 @@ plt.show()
 # predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
 results = {}
+newsize = (256, 256)  # target_size
 
 # if predictions == 'y':
-print('\n# Generate predictions for pictures ... ')
+print('\n# Generate predictions for pictures ...\n ')
 test_dir = data.test_dir
 image_filenames = next(os.walk(test_dir))
 
 for filename in image_filenames[2]:
     # convert the image to RGB
     img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
-    img_array = np.array(img)
-    img_array = np.expand_dims(img_array, 0)
+    # resize the image
+    img = img.resize(newsize)
 
-    # data_normalization
-    out_softmax = model.predict(x=img_array / 255.)
-    # predicted class
-    prediction = tf.argmax(out_softmax)
-    results[filename] = prediction
+    # data_normalization - convert to array
+    img_array = np.array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+
+    print("predict for %s...\n" % filename)
+    predictions = model.predict(img_array)
+    results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
 
 # create_csv(results)
 
@@ -184,3 +186,5 @@ pprint(results)
 #
 # predicted_class_indices=np.argmax(pred,axis=1) # predicted labels
 """
+
+print("done.")
