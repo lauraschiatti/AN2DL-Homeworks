@@ -11,24 +11,25 @@ from keras.preprocessing.image import ImageDataGenerator
 seed = 123
 tf.random.set_seed(seed)
 
-# path to dataset
-
 cwd = os.getcwd()
-dataset_dir = os.path.join(cwd, 'image_classification/dataset')
+dataset_dir = os.path.join(cwd, 'image_classification/dataset') # path to dataset
 
 input_dir = os.path.join(dataset_dir, 'training')
 dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
 test_dir = os.path.join(dataset_dir, 'test')
 
-# 80% training, 20% validation
-valid_split = 0.2
+# If split dataset does not exist, create
+if not os.path.exists(dataset_split_dir):
 
-# split into training and validation sets using a ratio . e.g. for train/val `.8 .2`.
-split_folders.ratio(
-    input_dir,
-    output=dataset_split_dir,
-    seed=seed,  # allows to reproduce the split
-    ratio=(1 - valid_split, valid_split))
+    # 80% training, 20% validation
+    valid_split = 0.2
+
+    # split into training and validation sets using a ratio . e.g. for train/val `.8 .2`.
+    split_folders.ratio(
+        input_dir,
+        output=dataset_split_dir,
+        seed=seed,  # allows to reproduce the split
+        ratio=(1 - valid_split, valid_split))
 
 # todo: create config dic with params
 
@@ -39,11 +40,11 @@ split_folders.ratio(
 #           'n_channels': 1,
 #           'shuffle': True}
 
-# image size @todo: which is the correct size for the images?
+# define dimensions of input images @todo: which is the correct size for the images?
 img_w = 256
 img_h = 256
 
-# color space
+# define channels (color space)
 channels = 3  # rgb
 
 # batch size
@@ -283,3 +284,27 @@ def create_keras_model():
                 kernel_regularizer=tf.keras.regularizers.l2(0.0001)))
 
     return model
+
+
+from datetime import datetime
+
+def create_csv(results, classifier='CNN'):
+    print("\nGenerating submission csv ... ")
+
+    # save on a different dir according to the classifier used
+    results_dir = 'image_classification/submissions/' + classifier
+
+    # If directory for the classifier does not exist, create
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    csv_fname = 'results_'
+    csv_fname += datetime.now().strftime('%b%d_%H-%M-%S') + '.csv'
+
+    with open(os.path.join(results_dir, csv_fname), 'w') as f:
+
+        fieldnames = 'Id,Category'
+        f.write(fieldnames + '\n')
+
+        for key, value in results.items():
+            f.write(key + ',' + str(value) + '\n')
