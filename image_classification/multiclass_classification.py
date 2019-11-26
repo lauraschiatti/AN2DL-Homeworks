@@ -1,22 +1,16 @@
-# !/usr/bin/env python3.6
+# !/usr/bin/env python3
+#  -*- coding utf-8 -*-
 
-import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from PIL import Image
-from pprint import pprint
-import os
 
-from utils import data_loader as data
+from utils import data_manager as data
 
-# -------------------------------------------------------- #
-### Multi-class Classification: multi-layer perceptron ###
-# ---------------------------------------------------------]]]] #
 
 # Fix the seed for random operations
 # ----------------------------------
 seed = 123
 tf.random.set_seed(seed)
+
 
 # Parameters
 hidden_layer_units = 512
@@ -29,6 +23,7 @@ epochs = 10
 # data.show_batch(train_generator)
 
 # (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
+
 
 # Create model
 # ------------
@@ -68,6 +63,7 @@ else:
 model.summary()
 # print('model initial weights', model.weights)
 
+
 # Specify the training configuration (optimizer, loss, metrics)
 # -------------------------------------------------------------
 # loss function to minimize
@@ -84,6 +80,7 @@ metrics = ['accuracy']
 model.compile(optimizer=adam_optimizer,
               loss=categorical_crossentropy_loss,
               metrics=metrics)
+
 
 # Train the model
 # ---------------
@@ -106,85 +103,36 @@ trained_model = model.fit_generator(generator=train_generator,
 # # history lds a record of the loss values and metric values during training
 print('\nhistory dict:', trained_model.history)
 
-# Evaluate the model
-# ----------
+
+# Model evaluation
+# ----------------
 
 print('Evaluate model on test data ... ')
 eval_out = model.evaluate_generator(valid_generator, steps=200, verbose=1)
 print('test loss:', eval_out)
 
 # Check Performance
-# print("Baseline: %.2f%% (%.2f%%)" %
-#       (results.mean() * 100, results.std() * 100))
+data.visualize_performance(trained_model)
 
-accuracy = trained_model.history['accuracy']
-validation_accuracy = trained_model.history['val_accuracy']
-loss = trained_model.history['loss']
-validation_loss = trained_model.history['val_loss']
 
-epochs = range(len(accuracy))
+# Model evaluation
+# ----------------
+# model.load_weights('/path/to/checkpoint')  # use this if you want to restore saved model
 
-plt.plot(epochs, accuracy, 'b', label='Training acc')
-plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
-plt.title('Training and validation accuracy')
-plt.legend()
+eval_out = model.evaluate_generator(valid_generator,
+                                    steps=len(valid_generator),
+                                    verbose=0)
+# test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
-plt.show()
+print('eval_out', eval_out)
 
-plt.plot(epochs, loss, 'b', label='Training loss')
-plt.plot(epochs, validation_loss, 'r', label='Validation loss')
-plt.title('Training and validation loss')
-plt.legend()
+# Check Performance
+data.visualize_performance(trained_model)
 
-plt.show()
 
-# Compute predictions (probabilities -- the output of the last layer)
+# Generate predictions
 # -------------------
+predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
-# predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
-
-results = {}
-newsize = (256, 256)  # target_size
-
-# if predictions == 'y':
-print('\n# Generate predictions for pictures ...\n ')
-test_dir = data.test_dir
-image_filenames = next(os.walk(test_dir))
-
-for filename in image_filenames[2]:
-    # convert the image to RGB
-    img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
-    # resize the image
-    img = img.resize(newsize)
-
-    # data_normalization - convert to array
-    img_array = np.array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-
-    print("predict for %s...\n" % filename)
-    predictions = model.predict(img_array)
-    results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
-
-# create_csv(results)
-
-# Prints the nicely formatted dictionary
-pprint(results)
-"""
-# Predict output
-# --------------
-
-# step_size_test = test_gen.n // test_gen.batch_size
-
-# reset the test_generator before whenever you call the predict_generator.
-# This is important, if you forget to reset the test_generator you will get outputs in a weird order.
-# test_gen.reset()
-#
-# pred = model.predict_generator(generator=test_gen,
-#                                     steps=step_size_test,
-#                                     verbose=1)
-#
-#
-# predicted_class_indices=np.argmax(pred,axis=1) # predicted labels
-"""
-
-print("done.")
+if predictions == 'y':
+    data.generate_predictions(model)

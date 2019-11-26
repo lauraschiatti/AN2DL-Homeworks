@@ -1,10 +1,14 @@
-# !/usr/bin/env python3.6
+# !/usr/bin/env python3
 #  -*- coding utf-8 -*-
 
 import os
 import tensorflow as tf
 import split_folders
 from keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from datetime import datetime
 
 # fix the seed for random operations to make experiments reproducible
 
@@ -83,7 +87,6 @@ def setup_data_generator(with_data_augmentation=False):
     apply_data_augmentation = with_data_augmentation
 
     # define data augmentation configuration
-
     if apply_data_augmentation:
 
         train_data_gen = ImageDataGenerator(
@@ -156,8 +159,7 @@ def setup_data_generator(with_data_augmentation=False):
 
 # Create dataset objects from generators
 # --------------------------------------
-def setup_dataset():
-    # todo: is it necessary to create dataset objects? or work directly with the generators?
+def setup_dataset(): # useful for small datasets (that can fit in memory)
     train_generator, valid_generator, test_generator = setup_data_generator()
 
     train_dataset = dataset_from_generator(train_generator, num_classes)
@@ -216,7 +218,7 @@ def show_batch(train_data):
     plt.show()  # show the figure
 
 
-def create_keras_model():
+def create_multilayer_model():
     which_model = 'base_weight_decay'
     # set_which_model(which_model)  # set model for training_callbacks
 
@@ -285,9 +287,73 @@ def create_keras_model():
 
     return model
 
+# Visualize history for loss and accuracy
+# ---------------------------------------
+def visualize_performance(trained_model):
+    accuracy = trained_model.history['accuracy']
+    validation_accuracy = trained_model.history['val_accuracy']
+    loss = trained_model.history['loss']
+    validation_loss = trained_model.history['val_loss']
 
-from datetime import datetime
+    epochs = range(len(accuracy))
 
+    # Visualize History for Loss.
+    plt.title('Model loss')
+    plt.plot(epochs, loss, 'b', label='Training loss')
+    plt.plot(epochs, validation_loss, 'r', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend(['training', 'validation'], loc='upper right')
+    plt.show()
+
+    # # Visualize History for Accuracy.
+    plt.title('Model accuracy')
+    plt.plot(epochs, accuracy, 'b', label='Training acc')
+    plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend(['training', 'validation'], loc='lower right')
+    plt.show()
+
+
+# Compute predictions (probabilities -- the output of the last layer)
+# -------------------------------------------------------------------
+def generate_predictions(model):
+    target_size = (img_h, img_w)
+    results = {}
+    results_str = {}
+
+    image_filenames = next(os.walk(test_dir))[2]  # s[:10] predict until 10th image
+
+    for filename in image_filenames:
+        # convert the image to RGB
+        img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
+        # resize the image
+        img = img.resize(target_size)
+
+        # data_normalization - convert to array
+        img_array = np.array(img)
+        img_array = np.expand_dims(img_array, axis=0)
+
+        print("prediction for {}...".format(filename))
+        predictions = model.predict(img_array * 1 / 255.)
+
+        # Get predicted class as the index corresponding to the maximum value in the vector probability
+        predicted_class = np.argmax(predictions, axis=-1)  # multiple categories
+        predicted_class = predicted_class[0]
+
+        results[filename] = predicted_class
+        results_str[filename] = class_list[predicted_class]
+
+    create_csv(results)
+
+    # Prints the nicely formatted dictionary
+    from pprint import pprint
+    pprint(results_str)
+
+    print('Num. of labeled images', results.__len__())
+
+
+# Create submission csv file
+# --------------------------
 def create_csv(results, classifier='CNN'):
     print("\nGenerating submission csv ... ")
 
