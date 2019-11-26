@@ -6,7 +6,6 @@ import tensorflow as tf
 from utils import data_manager as data
 from CNNClassifier import CNNClassifier
 
-
 # Fix the seed for random operations
 # ----------------------------------
 seed = 123
