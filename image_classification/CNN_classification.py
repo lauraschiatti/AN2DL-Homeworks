@@ -66,7 +66,7 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # -----------------------
 
 with_early_stop = True
-epochs = 10
+epochs = 20
 
 callbacks = []
 if with_early_stop:
@@ -119,80 +119,43 @@ plt.legend(['training', 'validation'], loc='lower right')
 # Compute predictions (probabilities -- the output of the last layer)
 # -------------------
 
-# predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
+predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
-newsize = (256, 256)  # target_size
+target_size = (data.img_h, data.img_w)
 results = {}
+results_str = {}
 
 test_dir = data.test_dir
-image_filenames = next(os.walk(test_dir))
+image_filenames = next(os.walk(test_dir))[2] #[:10]
 
-# test only one image
-for filename in image_filenames[2][:1]:
-    # convert the image to RGB
-    img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
-    # resize the image
-    img = img.resize(newsize)
+if predictions == 'y':
 
-    # data_normalization - convert to array
-    img_array = np.array(img)
-    img_array = np.expand_dims(img_array, axis=0)
+    print('\n# Labeling test images ... ')
 
-    print("predict for %s...\n" % filename)
-    predictions = model.predict(img_array * 1 / 255.)
-    results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
+    for filename in image_filenames:
+        # convert the image to RGB
+        img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
+        # resize the image
+        img = img.resize(target_size)
 
-#
-# if predictions == 'y':
-#
-#     print('\n# Labeling test images ... ')
-#     test_dir = data.test_dir
-#     image_filenames = next(os.walk(test_dir))[2]
-#
-#     for filename in image_filenames[:10]:
-#         print('labeling ' + filename)
-#
-#         # load image
-#         target_size = (data.img_w, data.img_h)
-#         # convert the image to RGB
-#         img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
-#         # resize the image
-#         img = img.resize(newsize)
-#
-#         # data_normalization - convert to array
-#         img_array = np.array(img)
-#         img_array = np.expand_dims(img_array, axis=0)
-#
-#         # use predict_generator() is inferring the labels
-#         # from the directory structure of training data.
-#
-#         # softmax = model.predict(x=img_array / 255.)      # data normalization
-#         # print('predictions probabs:', softmax.tolist())
-#
-#         # Get predicted class as the index corresponding to the maximum value in the vector probability
-#         # prediction = tf.argmax(softmax, axis=-1) # multiple categories
-#
-#         # predicted_class = predicted_class[0]
-#
-#         # results[filename] = prediction
-#
-#         print("predict for %s...\n" % filename)
-#         predictions = model.classifier.predict(img_array)
-#         results[filename] = data.class_list[np.argmax(predictions, axis=-1)[0]]
-#
-#         # todo: with generatory
-#         # predictions = model.predict_generator(test_generator)
-#         # predictions = np.argmax(predictions, axis=-1)
-#         # label_map = (train_generator.class_indices)
-#         # label_map = dict((v, k) for k, v in label_map.items())  # flip k,v
-#         # predictions = [label_map[k] for k in predictions]
-#
-#         results[filename] = predictions
+        # data_normalization - convert to array
+        img_array = np.array(img)
+        img_array = np.expand_dims(img_array, axis=0)
 
-# create_csv(results)
+        print("prediction for {}...".format(filename))
+        predictions = model.predict(img_array * 1 / 255.)
+
+        # Get predicted class as the index corresponding to the maximum value in the vector probability
+        predicted_class = np.argmax(predictions, axis=-1) # multiple categories
+        predicted_class = predicted_class[0]
+
+        results[filename] = predicted_class
+        results_str[filename] = data.class_list[predicted_class]
+
+data.create_csv(results)
 
 # Prints the nicely formatted dictionary
 from pprint import pprint
-pprint(results)
+pprint(results_str)
 
 print('Num. of labeled images', results.__len__())

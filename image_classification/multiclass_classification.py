@@ -9,9 +9,9 @@ import os
 
 from utils import data_loader as data
 
-# -------------------------------------- #
-### Multi-class Classification ###
-# -------------------------------------- #
+# -------------------------------------------------------- #
+### Multi-class Classification: multi-layer perceptron ###
+# ---------------------------------------------------------]]]] #
 
 # Fix the seed for random operations
 # ----------------------------------
