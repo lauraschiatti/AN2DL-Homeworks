@@ -1,6 +1,7 @@
 # !/usr/bin/env python3.6
 
 import tensorflow as tf
+from keras import activations
 
 
 class CNNClassifier(tf.keras.Model):
@@ -15,13 +16,17 @@ class CNNClassifier(tf.keras.Model):
             num_filters *= 2
 
         # Dropout Layer
-        # self.feature_extractor.add(Dropout(p=0.12))
+        self.feature_extractor.add(tf.keras.layers.Dropout(0.12))
 
         # Flatten convolutional result so we can feed data to fully connected layers
         self.flatten = tf.keras.layers.Flatten()
         self.classifier = tf.keras.Sequential()
 
         # Fully connected
+        self.classifier.add(tf.keras.layers.Dense(units=512,
+                                                  activation='relu'))
+        self.classifier.add(tf.keras.layers.Dense(units=512,
+                                                  activation='relu'))
         self.classifier.add(tf.keras.layers.Dense(units=512,
                                                   activation='relu'))
         self.classifier.add(tf.keras.layers.Dense(units=512,

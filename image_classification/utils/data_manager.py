@@ -16,7 +16,8 @@ seed = 123
 tf.random.set_seed(seed)
 
 cwd = os.getcwd()
-dataset_dir = os.path.join(cwd, 'image_classification/dataset') # path to dataset
+# path to dataset
+dataset_dir = os.path.join(cwd, 'image_classification/dataset')
 
 input_dir = os.path.join(dataset_dir, 'training')
 dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
@@ -159,7 +160,7 @@ def setup_data_generator(with_data_augmentation=False):
 
 # Create dataset objects from generators
 # --------------------------------------
-def setup_dataset(): # useful for small datasets (that can fit in memory)
+def setup_dataset():  # useful for small datasets (that can fit in memory)
     train_generator, valid_generator, test_generator = setup_data_generator()
 
     train_dataset = dataset_from_generator(train_generator, num_classes)
@@ -202,9 +203,8 @@ def show_batch(train_data):
 
     # create grid of subplots
     for i in range(1, 9):
-        plt.subplot(
-            3, 3,
-            i)  # create an axes object in the figure (n_rows, n_cols, plot_id)
+        # create an axes object in the figure (n_rows, n_cols, plot_id)
+        plt.subplot(3, 3, i)
 
         # plot raw pixel data
         image = image_batch[i]  # i-th image
@@ -272,8 +272,8 @@ def create_multilayer_model():
     elif which_model == 'base_weight_decay':
 
         model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=(28,
-                                                       28)))  # or as a list
+        # or as a list
+        model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
         model.add(
             tf.keras.layers.Dense(
                 units=1000,
@@ -286,6 +286,7 @@ def create_multilayer_model():
                 kernel_regularizer=tf.keras.regularizers.l2(0.0001)))
 
     return model
+
 
 # Visualize history for loss and accuracy
 # ---------------------------------------
@@ -321,7 +322,8 @@ def generate_predictions(model):
     results = {}
     results_str = {}
 
-    image_filenames = next(os.walk(test_dir))[2]  # s[:10] predict until 10th image
+    image_filenames = next(
+        os.walk(test_dir))[2]  # s[:10] predict until 10th image
 
     for filename in image_filenames:
         # convert the image to RGB
@@ -337,7 +339,8 @@ def generate_predictions(model):
         predictions = model.predict(img_array * 1 / 255.)
 
         # Get predicted class as the index corresponding to the maximum value in the vector probability
-        predicted_class = np.argmax(predictions, axis=-1)  # multiple categories
+        predicted_class = np.argmax(predictions,
+                                    axis=-1)  # multiple categories
         predicted_class = predicted_class[0]
 
         results[filename] = predicted_class

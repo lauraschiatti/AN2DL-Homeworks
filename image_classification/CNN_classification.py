@@ -1,7 +1,6 @@
 # !/usr/bin/env python3
 #  -*- coding utf-8 -*-
 
-
 import tensorflow as tf
 from utils import data_manager as data
 from CNNClassifier import CNNClassifier
@@ -13,7 +12,6 @@ tf.random.set_seed(seed)
 
 # todo: solve GPU
 
-
 # Data loader
 # -----------
 (train_generator, valid_generator,
@@ -21,7 +19,6 @@ tf.random.set_seed(seed)
 # data.show_batch(train_generator)
 
 # (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
-
 
 # Create CNN model
 # ------------
@@ -42,36 +39,33 @@ model.build(input_shape=(None, data.img_h, data.img_w, data.channels))
 # Visualize initialized weights
 # print('initial model weights', model.weights)
 
-
 # Prepare the model for training
 # ------------------------------
 loss = tf.keras.losses.CategoricalCrossentropy()
 
-lr = 1e-4  # learning rate
+lr = 0.00001  # learning rate
 optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
 
 metrics = ['accuracy']  # validation metrics to monitor
 
 model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 1
+epochs = 20
 
 callbacks = []
 if with_early_stopping:
     callbacks.append(
         tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                         patience=epochs * 0.3))
+                                         patience=epochs * 0.2))
 
 trained_model = model.fit_generator(generator=train_generator,
                                     epochs=epochs,
                                     steps_per_epoch=len(train_generator),
                                     validation_data=valid_generator,
                                     validation_steps=len(valid_generator))
-
 
 # Model evaluation
 # ----------------
@@ -87,11 +81,9 @@ print('eval_out', eval_out)
 # Check Performance
 data.visualize_performance(trained_model)
 
-
 # Generate predictions
 # -------------------
 predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
 if predictions == 'y':
     data.generate_predictions(model)
-
