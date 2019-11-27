@@ -70,9 +70,9 @@ trained_model = model.fit_generator(generator=train_generator,
 # ----------------
 # model.load_weights('/path/to/checkpoint')  # use this if you want to restore saved model
 
-eval_out = trained_model.evaluate_generator(valid_generator,
-                                            steps=len(valid_generator),
-                                            verbose=0)
+eval_out = model.evaluate_generator(valid_generator,
+                                    steps=len(valid_generator),
+                                    verbose=0)
 # test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
 print('eval_out', eval_out)
@@ -85,4 +85,4 @@ data.visualize_performance(trained_model)
 predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
 if predictions == 'y':
-    data.generate_predictions(trained_model, model_name)
+    data.generate_predictions(model, model_name)
