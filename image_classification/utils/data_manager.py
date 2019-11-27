@@ -53,7 +53,8 @@ img_h = 256
 channels = 3  # rgb
 
 # batch size
-batch_size = 32  # (default)
+batch_size = 16  # Common batch sizes 16, 32, and 64
+                # too large of a batch size will lead to poor generalization
 
 class_list = [
     'owl',  # 0
@@ -84,7 +85,7 @@ num_classes = len(class_list)
 
 # Create image generators from directory
 # --------------------------------------
-def setup_data_generator(with_data_augmentation=False):
+def setup_data_generator(with_data_augmentation=True):
     apply_data_augmentation = with_data_augmentation
 
     # define data augmentation configuration
@@ -101,10 +102,9 @@ def setup_data_generator(with_data_augmentation=False):
         train_data_gen = ImageDataGenerator(rescale=1. / 255)
 
     valid_data_gen = ImageDataGenerator(rescale=1. / 255)
-    test_data_gen = ImageDataGenerator(rescale=1. / 255)
+    # test_data_gen = ImageDataGenerator(rescale=1. / 255)
 
     # setup generators
-
     print('\ntrain_gen ... ')
     train_generator = train_data_gen.flow_from_directory(
         os.path.join(dataset_split_dir, 'train'),
@@ -127,23 +127,26 @@ def setup_data_generator(with_data_augmentation=False):
         shuffle=False,
         seed=seed)
 
-    print('\ntest_gen ... ')
-    # test directory doesn’t have subdirectories the classes of those images are unknown
-    test_generator = test_data_gen.flow_from_directory(
-        dataset_dir,  # specify the parent dir of the test dir
-        batch_size=batch_size,
-        target_size=(img_w, img_h),
-        color_mode='rgb',
-        classes=['test'],  # load the test “class”
-        # to yield the images in “order”, to predict the outputs
-        # and match them with their unique ids or filenames
-        shuffle=False,
-        seed=seed)
+    # print('\ntest_gen ... ')
+    # # test directory doesn’t have subdirectories the classes of those images are unknown
+    # test_generator = test_data_gen.flow_from_directory(
+    #     dataset_dir,  # specify the parent dir of the test dir
+    #     batch_size=batch_size,
+    #     target_size=(img_w, img_h),
+    #     color_mode='rgb',
+    #     classes=['test'],  # load the test “class”
+    #     # to yield the images in “order”, to predict the outputs
+    #     # and match them with their unique ids or filenames
+    #     shuffle=False,
+    #     seed=seed)
 
-    # todo: create dataset_split.json file indicating how do you split the training set...
+    get_config_params_from_generator(train_generator)
 
-    # get config params from train generator
-    images, labels = next(train_generator)
+    return train_generator, valid_generator #, test_generator
+
+
+def get_config_params_from_generator(generator):
+    images, labels = next(generator)
 
     global num_classes, channels
 
@@ -155,13 +158,10 @@ def setup_data_generator(with_data_augmentation=False):
     num_classes = labels.shape[1]
     print("num_classes", num_classes)
 
-    return train_generator, valid_generator, test_generator
-
-
 # Create dataset objects from generators
 # --------------------------------------
 def setup_dataset():  # useful for small datasets (that can fit in memory)
-    train_generator, valid_generator, test_generator = setup_data_generator()
+    train_generator, valid_generator = setup_data_generator()
 
     train_dataset = dataset_from_generator(train_generator, num_classes)
     train_dataset = train_dataset.repeat()
@@ -169,10 +169,7 @@ def setup_dataset():  # useful for small datasets (that can fit in memory)
     valid_dataset = dataset_from_generator(valid_generator, num_classes)
     valid_dataset = valid_dataset.repeat()
 
-    test_dataset = dataset_from_generator(test_generator, num_classes)
-    test_dataset = test_dataset.repeat()
-
-    return train_dataset, valid_dataset, test_dataset
+    return train_dataset, valid_dataset
 
 
 # Create dataset from generator
@@ -317,36 +314,32 @@ def visualize_performance(trained_model):
 
 # Compute predictions (probabilities -- the output of the last layer)
 # -------------------------------------------------------------------
-def generate_predictions(model):
-    target_size = (img_h, img_w)
+def generate_predictions(model, model_name):
     results = {}
     results_str = {}
 
-    image_filenames = next(
-        os.walk(test_dir))[2]  # s[:10] predict until 10th image
+    image_filenames = next(os.walk(test_dir))[2]  # s[:10] predict until 10th image
 
     for filename in image_filenames:
-        # convert the image to RGB
-        img = Image.open(os.path.join(test_dir, filename)).convert('RGB')
-        # resize the image
-        img = img.resize(target_size)
+        img = Image.open(os.path.join(test_dir, filename)).convert('RGB') # open as RGB
+        img = img.resize((img_h, img_w)) # target size
 
-        # data_normalization - convert to array
-        img_array = np.array(img)
-        img_array = np.expand_dims(img_array, axis=0)
+        # data_normalization
+        img_array = np.array(img) #
+        img_array = img_array * 1. / 255  # normalization
+        img_array = np.expand_dims(img_array, axis=0) # to fix dims of input in the model
 
         print("prediction for {}...".format(filename))
-        predictions = model.predict(img_array * 1 / 255.)
+        predictions = model.predict(img_array)
 
         # Get predicted class as the index corresponding to the maximum value in the vector probability
-        predicted_class = np.argmax(predictions,
-                                    axis=-1)  # multiple categories
+        predicted_class = np.argmax(predictions, axis=-1)  # multiple categories
         predicted_class = predicted_class[0]
 
         results[filename] = predicted_class
         results_str[filename] = class_list[predicted_class]
 
-    create_csv(results)
+    create_csv(results, model_name)
 
     # Prints the nicely formatted dictionary
     from pprint import pprint
@@ -357,11 +350,11 @@ def generate_predictions(model):
 
 # Create submission csv file
 # --------------------------
-def create_csv(results, classifier='CNN'):
+def create_csv(results, model_name):
     print("\nGenerating submission csv ... ")
 
     # save on a different dir according to the classifier used
-    results_dir = 'image_classification/submissions/' + classifier
+    results_dir = 'image_classification/submissions/' + model_name
 
     # If directory for the classifier does not exist, create
     if not os.path.exists(results_dir):

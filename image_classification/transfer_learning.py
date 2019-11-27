@@ -10,6 +10,8 @@ from utils import data_manager as data
 seed = 123
 tf.random.set_seed(seed)
 
+
+# User a pre-trained network for transfer learning
 # Load VGG16 model
 # ----------------
 vgg = tf.keras.applications.VGG16(weights='imagenet',
@@ -17,3 +19,5 @@ vgg = tf.keras.applications.VGG16(weights='imagenet',
                                   input_shape=(data.img_h, data.img_w, data.channels))
 vgg.summary()
 print(vgg.layers)
+
+model_name = 'CNN+TF'

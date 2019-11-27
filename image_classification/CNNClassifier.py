@@ -15,9 +15,6 @@ class CNNClassifier(tf.keras.Model):
             self.feature_extractor.add(ConvBlock(num_filters=num_filters))
             num_filters *= 2
 
-        # Dropout Layer
-        self.feature_extractor.add(tf.keras.layers.Dropout(0.12))
-
         # Flatten convolutional result so we can feed data to fully connected layers
         self.flatten = tf.keras.layers.Flatten()
         self.classifier = tf.keras.Sequential()
@@ -29,10 +26,9 @@ class CNNClassifier(tf.keras.Model):
                                                   activation='relu'))
         self.classifier.add(tf.keras.layers.Dense(units=512,
                                                   activation='relu'))
-        self.classifier.add(tf.keras.layers.Dense(units=512,
-                                                  activation='relu'))
-        self.classifier.add(tf.keras.layers.Dense(units=512,
-                                                  activation='relu'))
+        # Dropout Layer
+        self.feature_extractor.add(tf.keras.layers.Dropout(0.3))
+
         self.classifier.add(
             tf.keras.layers.Dense(units=num_classes, activation='softmax'))
 
@@ -52,15 +48,17 @@ class ConvBlock(tf.keras.Model):
         self.conv2d = tf.keras.layers.Conv2D(filters=num_filters,
                                              kernel_size=(3, 3),
                                              strides=(1, 1),
+                                             # padding the input such that the output
+                                             # has the same length as the original input
                                              padding='same')
 
         # we can specify the activation function directly in Conv2D
         self.activation = tf.keras.layers.ReLU()
-
         self.pooling = tf.keras.layers.MaxPool2D(pool_size=(2, 2))
 
     def call(self, inputs):
         x = self.conv2d(inputs)
         x = self.activation(x)
+        x = self.dropout(x)
         x = self.pooling(x)
         return x

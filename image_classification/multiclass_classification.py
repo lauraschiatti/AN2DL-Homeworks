@@ -5,12 +5,10 @@ import tensorflow as tf
 
 from utils import data_manager as data
 
-
 # Fix the seed for random operations
 # ----------------------------------
 seed = 123
 tf.random.set_seed(seed)
-
 
 # Parameters
 hidden_layer_units = 512
@@ -18,15 +16,13 @@ epochs = 10
 
 # Data loader
 # -----------
-(train_generator, valid_generator,
- test_generator) = data.setup_data_generator()
+train_generator, valid_generator = data.setup_data_generator()
 # data.show_batch(train_generator)
-
-# (train_dataset, valid_dataset, test_dataset) = data.setup_dataset()
 
 
 # Create model
 # ------------
+model_name = 'Multilayer-perceptron'
 # We decided to use se Sequential model because it is simpler
 
 sequential_model = True
@@ -81,7 +77,6 @@ model.compile(optimizer=adam_optimizer,
               loss=categorical_crossentropy_loss,
               metrics=metrics)
 
-
 # Train the model
 # ---------------
 with_early_stop = True
@@ -103,7 +98,6 @@ trained_model = model.fit_generator(generator=train_generator,
 # # history lds a record of the loss values and metric values during training
 print('\nhistory dict:', trained_model.history)
 
-
 # Model evaluation
 # ----------------
 
@@ -113,7 +107,6 @@ print('test loss:', eval_out)
 
 # Check Performance
 data.visualize_performance(trained_model)
-
 
 # Model evaluation
 # ----------------
@@ -129,10 +122,9 @@ print('eval_out', eval_out)
 # Check Performance
 data.visualize_performance(trained_model)
 
-
 # Generate predictions
 # -------------------
 predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
 if predictions == 'y':
-    data.generate_predictions(model)
+    data.generate_predictions(model, model_name)
