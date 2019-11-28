@@ -3,7 +3,6 @@
 
 import os
 import tensorflow as tf
-import split_folders
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,39 +10,14 @@ from PIL import Image
 from datetime import datetime
 
 # fix the seed for random operations to make experiments reproducible
-
 seed = 123
 tf.random.set_seed(seed)
 
 cwd = os.getcwd()
-# path to dataset
-dataset_dir = os.path.join(cwd, 'image_classification/dataset')
+dataset_dir = os.path.join(cwd, 'image_classification/dataset')  # path to dataset
 
-input_dir = os.path.join(dataset_dir, 'training')
-dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
+train_dir = os.path.join(dataset_dir, 'training')
 test_dir = os.path.join(dataset_dir, 'test')
-
-# If split dataset does not exist, create
-if not os.path.exists(dataset_split_dir):
-
-    # 80% training, 20% validation
-    valid_split = 0.2
-
-    # split into training and validation sets using a ratio . e.g. for train/val `.8 .2`.
-    split_folders.ratio(
-        input_dir,
-        output=dataset_split_dir,
-        seed=seed,  # allows to reproduce the split
-        ratio=(1 - valid_split, valid_split))
-
-# todo: create config dic with params
-
-# Parameters
-# params = {'dim': (32,32,32),
-#           'batch_size': 64,
-#           'num_classes': 6,
-#           'n_channels': 1,
-#           'shuffle': True}
 
 # define dimensions of input images @todo: which is the correct size for the images?
 img_w = 256
@@ -54,7 +28,7 @@ channels = 3  # rgb
 
 # batch size
 batch_size = 16  # Common batch sizes 16, 32, and 64
-                # too large of a batch size will lead to poor generalization
+# too large of a batch size will lead to poor generalization
 
 class_list = [
     'owl',  # 0
@@ -85,8 +59,67 @@ num_classes = len(class_list)
 
 # Create image generators from directory
 # --------------------------------------
-def setup_data_generator(with_data_augmentation=True):
+def setup_data_generator(with_data_augmentation=True, create_test_generator=False):
     apply_data_augmentation = with_data_augmentation
+
+    # NOTE: splitting is done with 'flow_from_directory(…, subset=training/validation)
+    # The fixed random seed is enough to reproduce the splitting.
+
+    # fraction of images reserved for validation
+    valid_split = 0.2
+
+    # define data augmentation configuration
+    if apply_data_augmentation:
+
+        train_data_gen = ImageDataGenerator(rescale=1. / 255,  # every pixel value from range [0,255] -> [0,1]
+                                            shear_range=0.2,
+                                            zoom_range=0.2,
+                                            rotation_range=45,
+                                            horizontal_flip=True,
+                                            vertical_flip=True,
+                                            validation_split=valid_split)
+
+    else:
+        train_data_gen = ImageDataGenerator(rescale=1. / 255,
+                                            validation_split=valid_split)
+
+    print('\ntrain_gen ... ')
+    train_generator = train_data_gen.flow_from_directory(train_dir,
+                                                  subset='training',  # subset of data
+                                                  batch_size=batch_size,
+                                                  target_size=(img_w, img_h),  # images are automatically resized
+                                                  color_mode='rgb',
+                                                  classes=class_list,
+                                                  class_mode='categorical',
+                                                  shuffle=True,
+                                                  seed=seed)
+
+    print('\nvalid_gen ... ')
+    valid_generator = train_data_gen.flow_from_directory(train_dir,
+                                                  subset='validation',
+                                                  batch_size=batch_size,
+                                                  target_size=(img_w, img_h),
+                                                  color_mode='rgb',
+                                                  classes=class_list,
+                                                  class_mode='categorical',
+                                                  shuffle=False,
+                                                  seed=seed)
+
+    get_input_params_from_generator(train_generator)
+
+    if create_test_generator:
+        test_generator = create_test_data_generator()
+        return train_generator, valid_generator, test_generator
+
+    return train_generator, valid_generator
+
+
+def setup_data_generator_using_split_folders(with_data_augmentation=True, create_test_generator=False):
+    apply_data_augmentation = with_data_augmentation
+
+    import split_folders
+
+    dataset_split_dir = os.path.join(dataset_dir, 'dataset_split')
 
     # define data augmentation configuration
     if apply_data_augmentation:
@@ -102,7 +135,6 @@ def setup_data_generator(with_data_augmentation=True):
         train_data_gen = ImageDataGenerator(rescale=1. / 255)
 
     valid_data_gen = ImageDataGenerator(rescale=1. / 255)
-    # test_data_gen = ImageDataGenerator(rescale=1. / 255)
 
     # setup generators
     print('\ntrain_gen ... ')
@@ -127,25 +159,19 @@ def setup_data_generator(with_data_augmentation=True):
         shuffle=False,
         seed=seed)
 
-    # print('\ntest_gen ... ')
-    # # test directory doesn’t have subdirectories the classes of those images are unknown
-    # test_generator = test_data_gen.flow_from_directory(
-    #     dataset_dir,  # specify the parent dir of the test dir
-    #     batch_size=batch_size,
-    #     target_size=(img_w, img_h),
-    #     color_mode='rgb',
-    #     classes=['test'],  # load the test “class”
-    #     # to yield the images in “order”, to predict the outputs
-    #     # and match them with their unique ids or filenames
-    #     shuffle=False,
-    #     seed=seed)
+    get_input_params_from_generator(train_generator)
 
-    get_config_params_from_generator(train_generator)
+    if create_test_generator:
+        test_generator = create_test_data_generator()
+        return train_generator, valid_generator, test_generator
 
-    return train_generator, valid_generator #, test_generator
+    return train_generator, valid_generator
 
 
-def get_config_params_from_generator(generator):
+
+# Extract num_classes and channels directly from generator
+# --------------------------------------------------------
+def get_input_params_from_generator(generator):
     images, labels = next(generator)
 
     global num_classes, channels
@@ -157,6 +183,7 @@ def get_config_params_from_generator(generator):
     # labels (y_labels)
     num_classes = labels.shape[1]
     print("num_classes", num_classes)
+
 
 # Create dataset objects from generators
 # --------------------------------------
@@ -173,7 +200,7 @@ def setup_dataset():  # useful for small datasets (that can fit in memory)
 
 
 # Create dataset from generator
-# -----------------------
+# -----------------------------
 def dataset_from_generator(generator,
                            classes,
                            img_height=256,
@@ -185,6 +212,28 @@ def dataset_from_generator(generator,
         output_shapes=([None, img_height, img_width,
                         img_channels], [None, classes]))
     return dataset
+
+
+# Generator for test directory that doesn’t have subdirectories
+# the classes of those images are unknown
+# -------------------------------------------------------------
+def create_test_data_generator():
+    test_data_gen = ImageDataGenerator(rescale=1. / 255)
+
+    print('\ntest_gen ... ')
+
+    test_generator = test_data_gen.flow_from_directory(
+        dataset_dir,  # specify the parent dir of the test dir
+        batch_size=batch_size,
+        target_size=(img_w, img_h),
+        color_mode='rgb',
+        classes=['test'],  # load the test “class”
+        # to yield the images in “order”, to predict the outputs
+        # and match them with their unique ids or filenames
+        shuffle=False,
+        seed=seed)
+
+    return test_generator
 
 
 # Iterate Dataset object to access samples inside it
@@ -321,13 +370,13 @@ def generate_predictions(model, model_name):
     image_filenames = next(os.walk(test_dir))[2]  # s[:10] predict until 10th image
 
     for filename in image_filenames:
-        img = Image.open(os.path.join(test_dir, filename)).convert('RGB') # open as RGB
-        img = img.resize((img_h, img_w)) # target size
+        img = Image.open(os.path.join(test_dir, filename)).convert('RGB')  # open as RGB
+        img = img.resize((img_h, img_w))  # target size
 
         # data_normalization
-        img_array = np.array(img) #
+        img_array = np.array(img)  #
         img_array = img_array * 1. / 255  # normalization
-        img_array = np.expand_dims(img_array, axis=0) # to fix dims of input in the model
+        img_array = np.expand_dims(img_array, axis=0)  # to fix dims of input in the model
 
         print("prediction for {}...".format(filename))
         predictions = model.predict(img_array)
@@ -370,3 +419,6 @@ def create_csv(results, model_name):
 
         for key, value in results.items():
             f.write(key + ',' + str(value) + '\n')
+
+
+setup_data_generator()
