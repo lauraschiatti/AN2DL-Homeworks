@@ -29,7 +29,10 @@ class CNNClassifier(tf.keras.Model):
         # Dropout Layer
         self.feature_extractor.add(tf.keras.layers.Dropout(0.3))
 
+        # Output Layer
         self.classifier.add(
+            # One unit for each class.
+            # Use softmax activation because it's a non-binary classification problem
             tf.keras.layers.Dense(units=num_classes, activation='softmax'))
 
     def call(self, inputs):

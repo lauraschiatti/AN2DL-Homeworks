@@ -47,11 +47,13 @@ model.compile(optimizer='Adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
+epochs = 5
 step_size_train = train_generator.n // train_generator.batch_size
 trained_model = model.fit_generator(generator=train_generator,
                                     steps_per_epoch=step_size_train,
-                                    epochs=5)
+                                    epochs=epochs)
 
+# history contains a trace of the loss and any other metrics specified during the compilation of the model
 print('\nhistory dict:', trained_model.history)
 
 # Model evaluation

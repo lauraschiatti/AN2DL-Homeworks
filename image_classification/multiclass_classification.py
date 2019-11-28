@@ -12,7 +12,7 @@ tf.random.set_seed(seed)
 
 # Parameters
 hidden_layer_units = 512
-epochs = 10
+epochs = 20
 
 # Data loader
 # -----------
@@ -94,8 +94,8 @@ trained_model = model.fit_generator(generator=train_generator,
                                     callbacks=callbacks,
                                     validation_data=valid_generator,
                                     validation_steps=200)
-#
-# # history lds a record of the loss values and metric values during training
+
+# history contains a trace of the loss and any other metrics specified during the compilation of the model
 print('\nhistory dict:', trained_model.history)
 
 # Model evaluation

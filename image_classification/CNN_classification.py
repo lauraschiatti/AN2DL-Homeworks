@@ -52,7 +52,7 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 1  # 100
+epochs = 20
 
 callbacks = []
 if with_early_stopping:
@@ -73,9 +73,11 @@ trained_model = model.fit_generator(generator=train_generator,
 eval_out = model.evaluate_generator(valid_generator,
                                     steps=len(valid_generator),
                                     verbose=0)
-# test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
 print('eval_out', eval_out)
+
+# history contains a trace of the loss and any other metrics specified during the compilation of the model
+print('\nhistory dict:', trained_model.history)
 
 # Check Performance
 data.visualize_performance(trained_model)

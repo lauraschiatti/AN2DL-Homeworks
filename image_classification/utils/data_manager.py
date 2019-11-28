@@ -334,31 +334,33 @@ def create_multilayer_model():
     return model
 
 
-# Visualize history for loss and accuracy
-# ---------------------------------------
+# Visualize accuracy and loss over time
+# -------------------------------------
 def visualize_performance(trained_model):
-    accuracy = trained_model.history['accuracy']
-    validation_accuracy = trained_model.history['val_accuracy']
-    loss = trained_model.history['loss']
-    validation_loss = trained_model.history['val_loss']
+    plt.plot(trained_model.history)
 
-    epochs = range(len(accuracy))
-
-    # Visualize History for Loss.
-    plt.title('Model loss')
-    plt.plot(epochs, loss, 'b', label='Training loss')
-    plt.plot(epochs, validation_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend(['training', 'validation'], loc='upper right')
-    plt.show()
-
-    # # Visualize History for Accuracy.
-    plt.title('Model accuracy')
-    plt.plot(epochs, accuracy, 'b', label='Training acc')
-    plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend(['training', 'validation'], loc='lower right')
-    plt.show()
+    # accuracy = trained_model.history['accuracy']
+    # validation_accuracy = trained_model.history['val_accuracy']
+    # loss = trained_model.history['loss']
+    # validation_loss = trained_model.history['val_loss']
+    #
+    # epochs = range(len(accuracy))
+    #
+    # # Visualize History for Loss.
+    # plt.title('Model loss')
+    # plt.plot(epochs, loss, 'b', label='Training loss')
+    # plt.plot(epochs, validation_loss, 'r', label='Validation loss')
+    # plt.title('Training and validation loss')
+    # plt.legend(['training', 'validation'], loc='upper right')
+    # plt.show()
+    #
+    # # # Visualize History for Accuracy.
+    # plt.title('Model accuracy')
+    # plt.plot(epochs, accuracy, 'b', label='Training acc')
+    # plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
+    # plt.title('Training and validation accuracy')
+    # plt.legend(['training', 'validation'], loc='lower right')
+    # plt.show()
 
 
 # Compute predictions (probabilities -- the output of the last layer)
