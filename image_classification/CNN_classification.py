@@ -35,7 +35,6 @@ pool_size = 2
 # convolution kernel size
 kernel_size = 3
 
-
 # Create model instance
 model = CNNClassifier(depth=depth,
                       num_filters=num_filters,
@@ -64,11 +63,10 @@ metrics = ['accuracy']  # validation metrics to monitor
 
 model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 2 # 100
+epochs = 2  # 100
 
 callbacks = []
 if with_early_stopping:

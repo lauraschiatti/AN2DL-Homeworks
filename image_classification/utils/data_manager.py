@@ -26,7 +26,7 @@ img_h = 256
 channels = 3  # rgb
 
 # input shape
-input_shape = (None, img_h, img_w, channels)
+input_shape = (img_h, img_w, channels)
 
 class_list = [
     'owl',  # 0

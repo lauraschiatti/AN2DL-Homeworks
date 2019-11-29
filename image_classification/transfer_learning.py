@@ -13,61 +13,94 @@ tf.random.set_seed(seed)
 # -----------
 train_generator, valid_generator = data.setup_data_generator()
 
-# User a pre-trained network for transfer learning
-# Load VGG16 model
-# ----------------
+
+# Use a pre-trained network for transfer learning: train dense layers for new classification task
+# we add dense layers so that the model can learn more complex functions
+
+# build the VGG16 network
+# ------------------------
 vgg = tf.keras.applications.VGG16(weights='imagenet',
                                   include_top=False,
                                   input_shape=data.input_shape)
+
 vgg.summary()
-print(vgg.layers)
+print("vgg.layers", vgg.layers)
 
 model_name = 'CNN+TF'
 
-x = vgg.output
-x = tf.keras.layers.GlobalAveragePooling2D()(x)
-# we add dense layers so that the model can learn more complex functions and classify for better results.
-x = tf.keras.layers.Dense(1024, activation='relu')(x)
-# dense layer 2
-x = tf.keras.layers.Dense(1024, activation='relu')(x)
-# dense layer 3
-x = tf.keras.layers.Dense(512, activation='relu')(x)
+# build a classifier model to put on top of the convolutional model
+
+# Two types of transfer learning: feature extraction and fine-tuning
+fine_tuning = True
+
+if fine_tuning:
+    freeze_until = 5  # 10  # layer from which we want to fine-tune
+
+    # set the first freeze_until layers (up to the last conv block => depth = 5)
+    # to non-trainable (weights will not be updated)
+    for layer in vgg.layers[:freeze_until]:
+        layer.trainable = False
+
+else:
+    vgg.trainable = False
+
+model = tf.keras.Sequential()
+model.add(vgg)
+model.add(tf.keras.layers.Flatten())
+
+# dense layers
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+
 # final layer with softmax activation
-preds = tf.keras.layers.Dense(data.num_classes, activation='softmax')(x)
+model.add(tf.keras.layers.Dense(units=data.num_classes, activation='softmax'))
 
-model = tf.keras.Model(inputs=vgg.input, outputs=preds)
+# Visualize created model as a table
+model.summary()
 
-for layer in model.layers[:20]:
-    layer.trainable = False
-for layer in model.layers[20:]:
-    layer.trainable = True
+# Visualize initialized weights
+print("model.weights", model.weights)
 
-model.compile(optimizer='Adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
 
-epochs = 5
+# Prepare the model for training
+# ------------------------------
+loss = tf.keras.losses.CategoricalCrossentropy()
+
+# learning rate
+lr = 1e-4
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+
+metrics = ['accuracy']  # validation metrics to monitor
+
+model.compile(optimizer=optimizer,
+              loss=loss,
+              metrics=metrics)
+
+
+# Fine-tune the model
+epochs = 100
 step_size_train = train_generator.n // train_generator.batch_size
 trained_model = model.fit_generator(generator=train_generator,
                                     steps_per_epoch=step_size_train,
                                     epochs=epochs)
 
+
 # history contains a trace of the loss and any other metrics specified during the compilation of the model
 print('\nhistory dict:', trained_model.history)
 
+
 # Model evaluation
 # ----------------
-# model.load_weights('/path/to/checkpoint')  # use this if you want to restore saved model
 
 eval_out = model.evaluate_generator(valid_generator,
                                     steps=len(valid_generator),
                                     verbose=0)
-# test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 
 print('eval_out', eval_out)
 
 # Check Performance
 data.visualize_performance(trained_model)
+
 
 # Generate predictions
 # -------------------
