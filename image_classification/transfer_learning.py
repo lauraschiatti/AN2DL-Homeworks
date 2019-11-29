@@ -16,6 +16,10 @@ train_generator, valid_generator = data.setup_data_generator()
 
 # Use a pre-trained network for transfer learning: train dense layers for new classification task
 
+# ------------------------------- #
+#   Fine tuning using vgg16
+# ------------------------------- #
+
 # VGG16 architecture consists of
     # twelve convolutional layers,
     # some of which are followed by maximum pooling layers
@@ -47,7 +51,16 @@ else:
     vgg.trainable = False
 
 
-# build a classifier model to put on top of the convolutional model
+# ------------------------------------------------ #
+#   Fine tuning using previously trained model
+# ------------------------------------------------ #
+
+
+
+# ------------------------------------------------------------------------- #
+#   Build a classifier model to put on top of the convolutional model
+# ------------------------------------------------------------------------- #
+
 # we add dense layers so that the model can learn more complex functions
 model = tf.keras.Sequential()
 model.add(vgg)
