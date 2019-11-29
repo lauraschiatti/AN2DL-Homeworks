@@ -67,11 +67,13 @@ model.add(vgg)
 model.add(tf.keras.layers.Flatten())
 
 # dense layers
-model.add(tf.keras.layers.Dense(units=2048, activation='relu'))
-model.add(tf.keras.layers.Dense(units=2048, activation='relu'))
-model.add(tf.keras.layers.Dense(units=2048, activation='relu'))
-model.add(tf.keras.layers.Dense(units=1024, activation='relu'))
-model.add(tf.keras.layers.Dense(units=1024, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+
 
 # final layer with softmax activation
 model.add(tf.keras.layers.Dense(units=data.num_classes, activation='softmax'))
