@@ -12,31 +12,49 @@ tf.random.set_seed(seed)
 
 # todo: solve GPU
 
-# todo: create dataset_split.json file indicating how do you split the training set...
-
 # Data loader
 # -----------
 train_generator, valid_generator = data.setup_data_generator()
-# data.show_batch(train_generator)
+# data.show_batch(train_generator) # check data loader
+
 
 # Create CNN model
 # ------------
 model_name = 'CNN'
-depth = 8
-num_filters = 10
+
+# input shape
+input_shape = (None, data.img_h, data.img_w, data.channels)
+
+
+# depth of the input volume i.e. different color channels of an image
+depth = 5
+
+# number of convolutional filter kernels to use
+#  weights where each is used for a convolution: trainable variables defining the filter.
+num_filters = 32
+
+# size of pooling area for max pooling
+pool_size = 2
+
+# convolution kernel size
+kernel_size = 3
+
 
 # Create Model instance
 model = CNNClassifier(depth=depth,
                       num_filters=num_filters,
+                      pool_size=pool_size,
+                      kernel_size=kernel_size,
                       num_classes=data.num_classes)
 
-# Build Model (Required)
-model.build(input_shape=(None, data.img_h, data.img_w, data.channels))
+# Build Model
+model.build(input_shape=input_shape)
 
 # Visualize created model as a table
 # model.feature_extractor.summary()
 # Visualize initialized weights
 # print('initial model weights', model.weights)
+
 
 # Prepare the model for training
 # ------------------------------
@@ -52,7 +70,7 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 20
+epochs = 2
 
 callbacks = []
 if with_early_stopping:

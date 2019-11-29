@@ -19,16 +19,12 @@ dataset_dir = os.path.join(cwd, 'image_classification/dataset')  # path to datas
 train_dir = os.path.join(dataset_dir, 'training')
 test_dir = os.path.join(dataset_dir, 'test')
 
-# define dimensions of input images @todo: which is the correct size for the images?
+# input image dimensions
 img_w = 256
 img_h = 256
 
-# define channels (color space)
+# number of input channels (color space)
 channels = 3  # rgb
-
-# batch size
-batch_size = 16  # Common batch sizes 16, 32, and 64
-# too large of a batch size will lead to poor generalization
 
 class_list = [
     'owl',  # 0
@@ -53,14 +49,19 @@ class_list = [
     'laptop'  # 19
 ]
 
-# number of classes
-num_classes = len(class_list)
+num_classes = len(class_list) # 20
+
+# number of training samples to feed the NN at each training step
+batch_size = 16 # 8, 32, 64             # training size: 1247 samples
+                                        # batch size: 16 samples/iteration
+                                        # more or less 78 iterations/epochh
+
 
 
 # Create image generators from directory
 # --------------------------------------
 def setup_data_generator(with_data_augmentation=True, create_test_generator=False):
-    apply_data_augmentation = with_data_augmentation
+    # the data, split between train and test sets
 
     # NOTE: splitting is done with 'flow_from_directory(…, subset=training/validation)
     # The fixed random seed is enough to reproduce the splitting.
@@ -69,6 +70,7 @@ def setup_data_generator(with_data_augmentation=True, create_test_generator=Fals
     valid_split = 0.2
 
     # define data augmentation configuration
+    apply_data_augmentation = with_data_augmentation
     if apply_data_augmentation:
 
         train_data_gen = ImageDataGenerator(rescale=1. / 255,  # every pixel value from range [0,255] -> [0,1]
@@ -168,7 +170,6 @@ def setup_data_generator_using_split_folders(with_data_augmentation=True, create
     return train_generator, valid_generator
 
 
-
 # Extract num_classes and channels directly from generator
 # --------------------------------------------------------
 def get_input_params_from_generator(generator):
@@ -203,9 +204,9 @@ def setup_dataset():  # useful for small datasets (that can fit in memory)
 # -----------------------------
 def dataset_from_generator(generator,
                            classes,
-                           img_height=256,
-                           img_width=256,
-                           img_channels=3):
+                           img_height=img_h,
+                           img_width=img_w,
+                           img_channels=channels):
     dataset = tf.data.Dataset.from_generator(
         lambda: generator,
         output_types=(tf.float32, tf.float32),
@@ -264,103 +265,33 @@ def show_batch(train_data):
     plt.show()  # show the figure
 
 
-def create_multilayer_model():
-    which_model = 'base_weight_decay'
-    # set_which_model(which_model)  # set model for training_callbacks
-
-    # Create base model using functional API Model (e.g., Input -> Hidden -> Out)
-    if which_model == 'model':
-        # x = tf.keras.Input(shape=[28, 28])  # input tensor
-        # flatten = tf.keras.layers.Flatten()(x)
-        # h = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.sigmoid)(flatten)  # hidden layers
-        # output layer:probabccc of belonging to each class
-        # out = tf.keras.layers.Dense(units=10, activation=tf.keras.activations.softmax)(h)
-        # model = tf.keras.Model(inputs=x, outputs=out)
-
-        # equivalent formulation:
-        model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=(28,
-                                                       28)))  # or as a list
-        model.add(
-            tf.keras.layers.Dense(units=10,
-                                  activation=tf.keras.activations.sigmoid))
-        model.add(
-            tf.keras.layers.Dense(units=10,
-                                  activation=tf.keras.activations.softmax))
-
-    # Create base model using sequential model (e.g., Input -> Hidden -> Out)
-    elif which_model == 'base':
-        model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=(28,
-                                                       28)))  # or as a list
-        model.add(
-            tf.keras.layers.Dense(units=1000,
-                                  activation=tf.keras.activations.sigmoid))
-        model.add(
-            tf.keras.layers.Dense(units=10,
-                                  activation=tf.keras.activations.softmax))
-
-    # Create model with Dropout layer
-    elif which_model == 'base_dropout':
-
-        model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=(28,
-                                                       28)))  # or as a list
-        model.add(
-            tf.keras.layers.Dense(units=1000,
-                                  activation=tf.keras.activations.sigmoid))
-        model.add(tf.keras.layers.Dropout(0.3))  # rate (probab): 0.3
-        model.add(
-            tf.keras.layers.Dense(units=10,
-                                  activation=tf.keras.activations.softmax))
-
-    # Create model with weights penalty (L2 regularization)
-    elif which_model == 'base_weight_decay':
-
-        model = tf.keras.Sequential()
-        # or as a list
-        model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
-        model.add(
-            tf.keras.layers.Dense(
-                units=1000,
-                activation=tf.keras.activations.sigmoid,
-                kernel_regularizer=tf.keras.regularizers.l2(0.0001)))
-        model.add(
-            tf.keras.layers.Dense(
-                units=10,
-                activation=tf.keras.activations.softmax,
-                kernel_regularizer=tf.keras.regularizers.l2(0.0001)))
-
-    return model
-
-
 # Visualize accuracy and loss over time
 # -------------------------------------
 def visualize_performance(trained_model):
-    plt.plot(trained_model.history)
+    # plt.plot(trained_model.history)
 
-    # accuracy = trained_model.history['accuracy']
-    # validation_accuracy = trained_model.history['val_accuracy']
-    # loss = trained_model.history['loss']
-    # validation_loss = trained_model.history['val_loss']
-    #
-    # epochs = range(len(accuracy))
-    #
-    # # Visualize History for Loss.
-    # plt.title('Model loss')
-    # plt.plot(epochs, loss, 'b', label='Training loss')
-    # plt.plot(epochs, validation_loss, 'r', label='Validation loss')
-    # plt.title('Training and validation loss')
-    # plt.legend(['training', 'validation'], loc='upper right')
-    # plt.show()
-    #
-    # # # Visualize History for Accuracy.
-    # plt.title('Model accuracy')
-    # plt.plot(epochs, accuracy, 'b', label='Training acc')
-    # plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
-    # plt.title('Training and validation accuracy')
-    # plt.legend(['training', 'validation'], loc='lower right')
-    # plt.show()
+    accuracy = trained_model.history['accuracy']
+    validation_accuracy = trained_model.history['val_accuracy']
+    loss = trained_model.history['loss']
+    validation_loss = trained_model.history['val_loss']
+
+    epochs = range(len(accuracy))
+
+    # Visualize History for Loss.
+    plt.title('Model loss')
+    plt.plot(epochs, loss, 'b', label='Training loss')
+    plt.plot(epochs, validation_loss, 'r', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend(['training', 'validation'], loc='upper right')
+    plt.show()
+
+    # # Visualize History for Accuracy.
+    plt.title('Model accuracy')
+    plt.plot(epochs, accuracy, 'b', label='Training acc')
+    plt.plot(epochs, validation_accuracy, 'r', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend(['training', 'validation'], loc='lower right')
+    plt.show()
 
 
 # Compute predictions (probabilities -- the output of the last layer)

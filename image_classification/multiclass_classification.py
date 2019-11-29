@@ -23,8 +23,8 @@ train_generator, valid_generator = data.setup_data_generator()
 # Create model
 # ------------
 model_name = 'Multilayer-perceptron'
-# We decided to use se Sequential model because it is simpler
 
+# We decided to use se Sequential model because it is simpler
 sequential_model = True
 x_shape = (data.img_h, data.img_w, data.channels)
 hidden_layers_activation = tf.keras.activations.tanh
@@ -98,12 +98,6 @@ trained_model = model.fit_generator(generator=train_generator,
 # history contains a trace of the loss and any other metrics specified during the compilation of the model
 print('\nhistory dict:', trained_model.history)
 
-# Model evaluation
-# ----------------
-
-print('Evaluate model on test data ... ')
-eval_out = model.evaluate_generator(valid_generator, steps=200, verbose=1)
-print('test loss:', eval_out)
 
 # Check Performance
 data.visualize_performance(trained_model)
