@@ -66,7 +66,7 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 2  # 100
+epochs = 100
 
 callbacks = []
 if with_early_stopping:

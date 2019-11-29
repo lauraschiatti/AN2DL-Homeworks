@@ -16,10 +16,10 @@ train_generator, valid_generator = data.setup_data_generator()
 
 # Use a pre-trained network for transfer learning: train dense layers for new classification task
 
-# # VGG16 architecture consists of twelve convolutional layers,
-# some of which are followed by maximum pooling layers
-# and then four fully-connected layers and finally a 1000-way softmax classifier
-
+# VGG16 architecture consists of
+    # twelve convolutional layers,
+    # some of which are followed by maximum pooling layers
+    # and then four fully-connected layers and finally a 1000-way softmax classifier
 
 # build the VGG16 network
 # ------------------------
@@ -36,7 +36,7 @@ model_name = 'CNN+TF'
 fine_tuning = True
 
 if fine_tuning:
-    freeze_until = 12  # layer from which we want to fine-tune
+    freeze_until = 8  # layer from which we want to fine-tune
 
     # set the first freeze_until layers (up to the last conv block => depth = 5)
     # to non-trainable (weights will not be updated)
@@ -54,6 +54,9 @@ model.add(vgg)
 model.add(tf.keras.layers.Flatten())
 
 # dense layers
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
+model.add(tf.keras.layers.Dense(units=512, activation='relu'))
 model.add(tf.keras.layers.Dense(units=512, activation='relu'))
 model.add(tf.keras.layers.Dense(units=512, activation='relu'))
 
