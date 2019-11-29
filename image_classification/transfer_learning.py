@@ -18,8 +18,7 @@ train_generator, valid_generator = data.setup_data_generator()
 # ----------------
 vgg = tf.keras.applications.VGG16(weights='imagenet',
                                   include_top=False,
-                                  input_shape=(data.img_h, data.img_w,
-                                               data.channels))
+                                  input_shape=data.input_shape)
 vgg.summary()
 print(vgg.layers)
 

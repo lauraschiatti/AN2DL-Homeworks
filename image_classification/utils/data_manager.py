@@ -15,7 +15,6 @@ tf.random.set_seed(seed)
 
 cwd = os.getcwd()
 dataset_dir = os.path.join(cwd, 'image_classification/dataset')  # path to dataset
-
 train_dir = os.path.join(dataset_dir, 'training')
 test_dir = os.path.join(dataset_dir, 'test')
 
@@ -25,6 +24,9 @@ img_h = 256
 
 # number of input channels (color space)
 channels = 3  # rgb
+
+# input shape
+input_shape = (None, img_h, img_w, channels)
 
 class_list = [
     'owl',  # 0
@@ -352,6 +354,3 @@ def create_csv(results, model_name):
 
         for key, value in results.items():
             f.write(key + ',' + str(value) + '\n')
-
-
-setup_data_generator()

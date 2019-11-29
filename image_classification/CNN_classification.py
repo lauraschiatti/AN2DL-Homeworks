@@ -19,12 +19,8 @@ train_generator, valid_generator = data.setup_data_generator()
 
 
 # Create CNN model
-# ------------
+# ----------------
 model_name = 'CNN'
-
-# input shape
-input_shape = (None, data.img_h, data.img_w, data.channels)
-
 
 # depth of the input volume i.e. different color channels of an image
 depth = 5
@@ -40,15 +36,15 @@ pool_size = 2
 kernel_size = 3
 
 
-# Create Model instance
+# Create model instance
 model = CNNClassifier(depth=depth,
                       num_filters=num_filters,
                       pool_size=pool_size,
                       kernel_size=kernel_size,
                       num_classes=data.num_classes)
 
-# Build Model
-model.build(input_shape=input_shape)
+# Build model
+model.build(input_shape=data.input_shape)
 
 # Visualize created model as a table
 # model.feature_extractor.summary()
@@ -60,17 +56,19 @@ model.build(input_shape=input_shape)
 # ------------------------------
 loss = tf.keras.losses.CategoricalCrossentropy()
 
-lr = 1e-4  # learning rate
+# learning rate
+lr = 1e-4
 optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
 
 metrics = ['accuracy']  # validation metrics to monitor
 
 model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
+
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 2
+epochs = 2 # 100
 
 callbacks = []
 if with_early_stopping:
