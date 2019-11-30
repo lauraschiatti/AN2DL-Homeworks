@@ -14,7 +14,8 @@ seed = 123
 tf.random.set_seed(seed)
 
 cwd = os.getcwd()
-dataset_dir = os.path.join(cwd, 'image_classification/dataset')  # path to dataset
+dataset_dir = os.path.join(cwd,
+                           'image_classification/dataset')  # path to dataset
 train_dir = os.path.join(dataset_dir, 'training')
 test_dir = os.path.join(dataset_dir, 'test')
 
@@ -51,18 +52,19 @@ class_list = [
     'laptop'  # 19
 ]
 
-num_classes = len(class_list) # 20
+num_classes = len(class_list)  # 20
 
 # number of training samples to feed the NN at each training step
-batch_size = 16 # 8, 32, 64             # training size: 1247 samples
-                                        # batch size: 16 samples/iteration
-                                        # more or less 78 iterations/epochh
+batch_size = 16  # 8, 32, 64             # training size: 1247 samples
 
+# batch size: 16 samples/iteration
+# more or less 78 iterations/epochh
 
 
 # Create image generators from directory
 # --------------------------------------
-def setup_data_generator(with_data_augmentation=True, create_test_generator=False):
+def setup_data_generator(with_data_augmentation=True,
+                         create_test_generator=False):
     # the data, split between train and test sets
 
     # NOTE: splitting is done with 'flow_from_directory(…, subset=training/validation)
@@ -75,39 +77,42 @@ def setup_data_generator(with_data_augmentation=True, create_test_generator=Fals
     apply_data_augmentation = with_data_augmentation
     if apply_data_augmentation:
 
-        train_data_gen = ImageDataGenerator(rescale=1. / 255,  # every pixel value from range [0,255] -> [0,1]
-                                            shear_range=0.2,
-                                            zoom_range=0.2,
-                                            rotation_range=45,
-                                            horizontal_flip=True,
-                                            vertical_flip=True,
-                                            validation_split=valid_split)
+        train_data_gen = ImageDataGenerator(
+            rescale=1. / 255,  # every pixel value from range [0,255] -> [0,1]
+            shear_range=0.2,
+            zoom_range=0.2,
+            rotation_range=45,
+            horizontal_flip=True,
+            vertical_flip=True,
+            validation_split=valid_split)
 
     else:
         train_data_gen = ImageDataGenerator(rescale=1. / 255,
                                             validation_split=valid_split)
 
     print('\ntrain_gen ... ')
-    train_generator = train_data_gen.flow_from_directory(train_dir,
-                                                  subset='training',  # subset of data
-                                                  batch_size=batch_size,
-                                                  target_size=(img_w, img_h),  # images are automatically resized
-                                                  color_mode='rgb',
-                                                  classes=class_list,
-                                                  class_mode='categorical',
-                                                  shuffle=True,
-                                                  seed=seed)
+    train_generator = train_data_gen.flow_from_directory(
+        train_dir,
+        subset='training',  # subset of data
+        batch_size=batch_size,
+        target_size=(img_w, img_h),  # images are automatically resized
+        color_mode='rgb',
+        classes=class_list,
+        class_mode='categorical',
+        shuffle=True,
+        seed=seed)
 
     print('\nvalid_gen ... ')
-    valid_generator = train_data_gen.flow_from_directory(train_dir,
-                                                  subset='validation',
-                                                  batch_size=batch_size,
-                                                  target_size=(img_w, img_h),
-                                                  color_mode='rgb',
-                                                  classes=class_list,
-                                                  class_mode='categorical',
-                                                  shuffle=False,
-                                                  seed=seed)
+    valid_generator = train_data_gen.flow_from_directory(
+        train_dir,
+        subset='validation',
+        batch_size=batch_size,
+        target_size=(img_w, img_h),
+        color_mode='rgb',
+        classes=class_list,
+        class_mode='categorical',
+        shuffle=False,
+        seed=seed)
 
     get_input_params_from_generator(train_generator)
 
@@ -118,7 +123,8 @@ def setup_data_generator(with_data_augmentation=True, create_test_generator=Fals
     return train_generator, valid_generator
 
 
-def setup_data_generator_using_split_folders(with_data_augmentation=True, create_test_generator=False):
+def setup_data_generator_using_split_folders(with_data_augmentation=True,
+                                             create_test_generator=False):
     apply_data_augmentation = with_data_augmentation
 
     import split_folders
@@ -302,22 +308,26 @@ def generate_predictions(model, model_name):
     results = {}
     results_str = {}
 
-    image_filenames = next(os.walk(test_dir))[2]  # s[:10] predict until 10th image
+    image_filenames = next(
+        os.walk(test_dir))[2]  # s[:10] predict until 10th image
 
     for filename in image_filenames:
-        img = Image.open(os.path.join(test_dir, filename)).convert('RGB')  # open as RGB
+        img = Image.open(os.path.join(test_dir,
+                                      filename)).convert('RGB')  # open as RGB
         img = img.resize((img_h, img_w))  # target size
 
         # data_normalization
         img_array = np.array(img)  #
         img_array = img_array * 1. / 255  # normalization
-        img_array = np.expand_dims(img_array, axis=0)  # to fix dims of input in the model
+        img_array = np.expand_dims(img_array,
+                                   axis=0)  # to fix dims of input in the model
 
         print("prediction for {}...".format(filename))
         predictions = model.predict(img_array)
 
         # Get predicted class as the index corresponding to the maximum value in the vector probability
-        predicted_class = np.argmax(predictions, axis=-1)  # multiple categories
+        predicted_class = np.argmax(predictions,
+                                    axis=-1)  # multiple categories
         predicted_class = predicted_class[0]
 
         results[filename] = predicted_class
@@ -354,3 +364,7 @@ def create_csv(results, model_name):
 
         for key, value in results.items():
             f.write(key + ',' + str(value) + '\n')
+
+
+def save_model_weights(model, model_filename):
+    model.save_weights(model_filename + '.weights', save_format="tf")

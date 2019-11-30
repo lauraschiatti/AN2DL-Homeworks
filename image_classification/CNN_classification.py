@@ -1,6 +1,6 @@
 # !/usr/bin/env python3
 #  -*- coding utf-8 -*-
-
+import os
 import tensorflow as tf
 from utils import data_manager as data
 from CNNClassifier import CNNClassifier
@@ -16,7 +16,6 @@ tf.random.set_seed(seed)
 # -----------
 train_generator, valid_generator = data.setup_data_generator()
 # data.show_batch(train_generator) # check data loader
-
 
 # Create CNN model
 # ----------------
@@ -50,7 +49,6 @@ model.build(input_shape=data.input_shape)
 # Visualize initialized weights
 # print('initial model weights', model.weights)
 
-
 # Prepare the model for training
 # ------------------------------
 loss = tf.keras.losses.CategoricalCrossentropy()
@@ -66,7 +64,7 @@ model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 # Train the model
 # ---------------
 with_early_stopping = True
-epochs = 100
+epochs = 150
 
 callbacks = []
 if with_early_stopping:
@@ -102,3 +100,7 @@ predictions = input('\nCompute and save predictions?: ' 'y - Yes  n - No\n')
 
 if predictions == 'y':
     data.generate_predictions(model, model_name)
+
+path = os.path.join(data.cwd, 'image_classification/models')
+model_filename = os.path.join(path, "model_" + model_name + "-weight")
+data.save_model_weights(model, model_filename)

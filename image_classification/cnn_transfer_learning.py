@@ -1,8 +1,7 @@
-# !/usr/bin/env python3.6
-#  -*- coding utf-8 -*-
-
+import os
 import tensorflow as tf
 from utils import data_manager as data
+from CNNClassifier import CNNClassifier
 
 # Fix the seed for random operations
 # ----------------------------------
@@ -16,22 +15,46 @@ train_generator, valid_generator = data.setup_data_generator()
 # Use a pre-trained network for transfer learning: train dense layers for new classification task
 
 # ------------------------------- #
-#   Fine tuning using vgg16
+#   Load previously trained CNN model
 # ------------------------------- #
+new_model = CNNClassifier(depth=data.depth,
+                          num_filters=data.num_filters,
+                          pool_size=data.pool_size,
+                          kernel_size=data.kernel_size,
+                          num_classes=data.num_classes)
 
-# VGG16 architecture consists of
-# twelve convolutional layers,
-# some of which are followed by maximum pooling layers
-# and then four fully-connected layers and finally a 1000-way softmax classifier
+# Build Model (Required)
+new_model.build(input_shape=(None, data.img_h, data.img_w, data.channels))
 
-# build the VGG16 network
-# ------------------------
-vgg = tf.keras.applications.VGG16(weights='imagenet',
-                                  include_top=False,
-                                  input_shape=data.input_shape)
+loss = tf.keras.losses.CategoricalCrossentropy()
+lr = 1e-4  # learning rate
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+metrics = ['accuracy']  # validation metrics to monitor
 
-vgg.summary()
-# print("vgg.layers", vgg.layers)
+new_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+# Train the model
+# ---------------
+with_early_stopping = True
+
+callbacks = []
+if with_early_stopping:
+    callbacks.append(
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                         patience=data.epochs * 0.2))
+
+# train on 0 epochs
+new_model.fit_generator(generator=train_generator,
+                        epochs=0,
+                        steps_per_epoch=len(train_generator),
+                        validation_data=valid_generator,
+                        validation_steps=len(valid_generator))
+
+# Load the state of the old model
+model_filename = os.path.join(data.cwd, 'image_classification/models')
+new_model.load_weights(model_filename + '/CNN-weights')
+
+######################################
 
 model_name = 'CNN+TF'
 
@@ -43,11 +66,11 @@ if fine_tuning:
 
     # set the first freeze_until layers (up to the last conv block => depth = 5)
     # to non-trainable (weights will not be updated)
-    for layer in vgg.layers[:freeze_until]:
+    for layer in new_model.layers[:freeze_until]:
         layer.trainable = False
 
 else:
-    vgg.trainable = False
+    new_model.trainable = False
 
 # ------------------------------------------------ #
 #   Fine tuning using previously trained model
