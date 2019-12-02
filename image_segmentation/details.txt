@@ -1,0 +1,92 @@
+
+
+# ------------------------------------------------------------------ #
+                ##### Image Segmentation #####
+# ------------------------------------------------------------------ #
+
+Segmentation problem: Given an image, the goal is to segment buildings at pixel level, thus predicting
+                      for each pixel if it belongs to a building (class 1) or not (class 0).
+
+
+# GPU
+#------------
+
+## Note: If you want to use GPU for your experiments you have to install tensorflow-gpu library.
+Tensorflow 2 will use automatically a GPU device if it is available on your system.
+
+https://www.tensorflow.org/install/gpu
+https://www.tensorflow.org/guide/gpu
+
+Additionally you can use Google Colaboratory (https://colab.research.google.com/notebooks/welcome.ipynb)
+to use a GPU on cloud. It is a service with an interface similar to Jupyter notebooks with most of the libraries
+already installed (check how to import Tensorflow 2).
+
+
+
+# Code organization
+# -----------------
+dataset splitting, data loader, model creation, model fitting, etc
+
+
+# Dataset details:
+# ----------------
+
+Image size: 256x256 pixels
+
+Color space: RGB
+
+File Format: tif
+
+Number of classes: 2
+Classes:
+'background' : 0
+'building' : 1 (corresponding to the value 255 in the stored masks)
+
+Number of training images: 7647
+Number of tes images: 1234
+
+
+Two folders:
+    training: 7647 images
+        images/ RGB images
+        masks/ corresponding segmentation masks (ground truth)
+
+    test: 1234 images
+        only RGB images since no segmentation masks are provided.
+
+
+# Data Loading
+# ------------
+
+- All images are in an additional subfolder img to allow the use of the ImageDataGenerator.flow_from_directory
+with the attribute class_mode set to None.
+
+Tips:
+
+- When using ImageDataGenerator remember to set class_mode=None in flow_from_directory,
+  to get only images without generating targets.
+
+- Use two separate generators for RGB images and corresponding masks.
+    Important: remember to set the same random seed when creating the two generators,
+    otherwise input images and masks will not be coupled and their augmentation will
+    be different (in the case you will use data augmentation).
+
+- Use rescale=1./255 in the mask ImageDataGenerator to obtain binary values {0, 1} as target.
+
+- Use color_mode='grayscale' in the mask flow_from_directory to obtain single-channel images.
+    When using data augmentation on masks we recommend to cast mask tensor to tf.int32.
+    When applying geometric transformations, like rotation or zoom, the output is
+    interpolated so you will end up with values in [0, 1] which are no longer binary.
+
+    Casting to integer will allow to obtain again binary masks. One way to do it is to create a map function, e.g.:
+
+    def prepare_target(x_, y_):
+        y_ = tf.cast(y_, tf.int32)
+        return x_, y_
+
+    train_dataset = train_dataset.map(prepare_target)
+
+
+
+
+
