@@ -14,8 +14,7 @@ seed = 123
 tf.random.set_seed(seed)
 
 cwd = os.getcwd()
-dataset_dir = os.path.join(cwd,
-                           'image_classification/dataset')  # path to dataset
+dataset_dir = os.path.join(cwd, 'image_classification/dataset')  # path to dataset
 train_dir = os.path.join(dataset_dir, 'training')
 test_dir = os.path.join(dataset_dir, 'test')
 
