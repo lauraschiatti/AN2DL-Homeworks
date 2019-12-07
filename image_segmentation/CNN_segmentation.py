@@ -271,3 +271,118 @@ eval_out = model.evaluate(x=valid_dataset,
 
 # print("eval_out", eval_out)
 
+
+
+
+
+for img_filename in img_filenames:
+    mask_filename = img_filename[:-4] + '.png'
+
+    img = Image.open(os.path.join(test_img_dir, img_filename))
+    img = img.resize((128, 128))
+    mask = Image.open(os.path.join(test_mask_dir, mask_filename))
+    mask = mask.resize((128, 128))
+
+    img_arr = np.expand_dims(np.array(img), 0)
+
+    out_softmax = model.predict(x=img_arr / 255.)
+
+    # Get predicted class as the index corresponding to the maximum value in the vector probability
+    predicted_class = tf.argmax(out_softmax, -1)
+    predicted_class = predicted_class[0]
+
+    target = np.array(mask)
+    target -= 1  ## to get classes 0,1,2 instead of 1,2,3
+
+    print(target.shape)
+
+    # Assign colors (just for visualization)
+    target_img = np.zeros([target.shape[0], target.shape[1], 3])
+    prediction_img = np.zeros([target.shape[0], target.shape[1], 3])
+
+    target_img[np.where(target == 0)] = colors_dict[0]
+    target_img[np.where(target == 1)] = colors_dict[1]
+    target_img[np.where(target == 2)] = colors_dict[2]
+
+    prediction_img[np.where(predicted_class == 0)] = colors_dict[0]
+    prediction_img[np.where(predicted_class == 1)] = colors_dict[1]
+    prediction_img[np.where(predicted_class == 2)] = colors_dict[2]
+
+    ax[0].imshow(np.uint8(img_arr[0, ...]))
+    ax[1].imshow(np.uint8(target_img))
+    ax[2].imshow(np.uint8(prediction_img))
+
+    fig.canvas.draw()
+    time.sleep(1)
+
+
+# Compute predictions
+# -------------------
+def generate_predictions():
+    from PIL import Image
+
+    # Cycle over test images
+    test_img_dir = os.path.join(test_dir, 'images', 'img')
+
+    image_filenames = next(os.walk(test_img_dir))[2] # s[:10] predict until 10th image
+
+    results = {}
+
+    for filename in image_filenames:
+        mask_filename = img_filename[:-4] + '.tif'
+
+        img = Image.open(os.path.join(test_img_dir, img_filename)).convert('LA')  # open as greyscale
+        img = img.resize((img_h, img_w)) # target size
+
+        # data_normalization
+        img_array = np.array(img)  #
+        # img_array = img_array * 1. / 255  # normalization
+        img_array = np.expand_dims(img_array, axis=0)  # to fix dims of input in the model
+
+        print("prediction for {}...".format(filename))
+        predictions = model.predict(img_array)
+
+        # Get predicted class as the index corresponding to the maximum value in the vector probability
+        predicted_class = tf.argmax(predictions, axis=-1)
+        predicted_class = predicted_class[0]
+
+        target = np.array(mask) # to get classes 0, 1
+
+        # print(target.shape)
+
+        results[filename] = target
+
+    # create_csv(results)
+
+    # Prints the nicely formatted dictionary
+    from pprint import pprint
+    pprint(results)
+
+    print('Num. of labeled images', results.__len__())
+
+
+# Create submission csv file
+# --------------------------
+import datetime
+def create_csv(results):
+
+    print("\nGenerating submission csv ... ")
+
+    # save on a different dir according to the classifier used
+    results_dir = 'image_segmentation/submissions/'
+
+    # If directory for the classifier does not exist, create
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    csv_fname = 'results_'
+    csv_fname += datetime.now().strftime('%b%d_%H-%M-%S') + '.csv'
+
+    with open(os.path.join(results_dir, csv_fname), 'w') as f:
+
+        fieldnames = 'Id,Category'
+        f.write(fieldnames + '\n')
+
+        for key, value in results.items():
+            f.write(key + ',' + str(value) + '\n')
+
