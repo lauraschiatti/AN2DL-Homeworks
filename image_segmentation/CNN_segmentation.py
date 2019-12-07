@@ -77,6 +77,8 @@ else:
                                             validation_split=valid_split)
     train_mask_data_gen = ImageDataGenerator(validation_split=valid_split)
 
+
+
 # Create generators to read images from dataset directory
 # -------------------------------------------------------
 
@@ -143,201 +145,129 @@ valid_mask_gen = train_mask_data_gen.flow_from_directory(os.path.join(train_dir,
                                                          seed=SEED)
 valid_gen = zip(valid_img_gen, valid_mask_gen)
 
+
 # # Create Dataset objects
 # # ----------------------
-#
-# # Training
-# # --------
-# train_dataset = tf.data.Dataset.from_generator(lambda: train_gen,
-#                                                output_types=(tf.float32, tf.float32),
-#                                                output_shapes=([None, img_h, img_w, output_channels], [None, img_h, img_w, output_channels]))
-#
-#
-# # pixels in the segmentation mask are labeled either {1, 2, 3}
-# # For the sake of convenience, let's subtract 1 from the segmentation mask,
-# # resulting in labels that are : {0, 1, 2}.
-# def prepare_target(x_, y_): # input_img, input_mask
-#     y_ = tf.cast(tf.expand_dims(y_[..., 0], -1), tf.int32)
-#     return x_, tf.where(y_ > 0, y_ - 1, y_ + 1)
-#
-#
-# train_dataset = train_dataset.map(prepare_target)
-#
-# # Repeat
-# train_dataset = train_dataset.repeat()
-#
-# # Validation
-# # ----------
-# valid_dataset = tf.data.Dataset.from_generator(lambda: valid_gen,
-#                                                output_types=(tf.float32, tf.float32),
-#                                                output_shapes=([None, img_h, img_w, output_channels], [None, img_h, img_w, output_channels]))
-# valid_dataset = valid_dataset.map(prepare_target)
-#
-# # Repeat
-# valid_dataset = valid_dataset.repeat()
-#
-# # Test
-# # ----
-# test_dataset = tf.data.Dataset.from_generator(lambda: test_gen,
-#                                               output_types=(tf.float32, tf.float32),
-#                                               output_shapes=([None, img_h, img_w, output_channels], [None, img_h, img_w, output_channels]))
-# test_dataset = test_dataset.map(prepare_target)
-#
-# # Repeat
-# test_dataset = valid_dataset.repeat()
+
+# Validation
+# ----------
+# When using data augmentation on masks we recommend to cast mask tensor to tf.int32
+def prepare_target(x_, y_):
+    y_ = tf.cast(y_, tf.int32)
+    return x_, y_
+
+
+valid_dataset = tf.data.Dataset.from_generator(lambda: valid_gen,
+                                               output_types=(tf.float32, tf.float32),
+                                               output_shapes=([None, img_h, img_w, output_channels],
+                                                              [None, img_h, img_w, output_channels]))
+valid_dataset = valid_dataset.map(prepare_target)
+
+# Repeat
+valid_dataset = valid_dataset.repeat()
+
 
 # Let's test data generator
 # -------------------------
-# import time
-# import matplotlib.pyplot as plt
-#
-# fig, ax = plt.subplots(1, 2)
-# fig.show()
-#
-# # Assign a color to each class
-# colors_dict = {}
-# colors_dict[0] = [252, 186, 3]  # foreground
-# colors_dict[1] = [0, 0, 0]  # background
-# colors_dict[2] = [3, 82, 252]  # contours
-#
-# iterator = iter(train_dataset)
-#
-# for _ in range(1000):
-#     augmented_img, target = next(iterator)
-#     augmented_img = augmented_img[0]  # First element
-#     augmented_img = augmented_img * 255  # denormalize
-#
-#     target = np.array(target[0, ..., 0])  # First element (squeezing channel dimension)
-#
-#     # Assign colors (just for visualization)
-#     target_img = np.zeros([target.shape[0], target.shape[1], 3])
-#
-#     target_img[np.where(target == 0)] = colors_dict[0]
-#     target_img[np.where(target == 1)] = colors_dict[1]
-#     target_img[np.where(target == 2)] = colors_dict[2]
-#
-#     ax[0].imshow(np.uint8(augmented_img))
-#     ax[1].imshow(np.uint8(target_img))
-#
-#     fig.canvas.draw()
-#     time.sleep(1)
-#
-# np.unique(target_img)
 
-# # -------------------------------------- #
-# #   Convolutional Neural Network (CNN)
-# # -------------------------------------- #
-# # Encoder-Decoder
-#
-# # Create Model
-# # ------------
-#
-# def create_model(depth, start_f, num_classes, dynamic_input_shape):
-#     model = tf.keras.Sequential()
-#
-#     # Encoder
-#     # -------
-#     for i in range(depth):
-#
-#         if i == 0:
-#             if dynamic_input_shape:
-#                 input_shape = [None, None, 3]
-#             else:
-#                 input_shape = [img_h, img_w, 3]
-#         else:
-#             input_shape = [None]
-#
-#         model.add(tf.keras.layers.Conv2D(filters=start_f,
-#                                          kernel_size=(3, 3),
-#                                          strides=(1, 1),
-#                                          padding='same',
-#                                          input_shape=input_shape))
-#         model.add(tf.keras.layers.ReLU())
-#         model.add(tf.keras.layers.MaxPool2D(pool_size=(2, 2)))
-#
-#         start_f *= 2
-#
-#     # Decoder
-#     # -------
-#     for i in range(depth):
-#         model.add(tf.keras.layers.UpSampling2D(2, interpolation='bilinear'))
-#         model.add(tf.keras.layers.Conv2D(filters=start_f // 2,
-#                                          kernel_size=(3, 3),
-#                                          strides=(1, 1),
-#                                          padding='same'))
-#
-#         model.add(tf.keras.layers.ReLU())
-#
-#         start_f = start_f // 2
-#
-#     # Prediction Layer
-#     # ----------------
-#     model.add(tf.keras.layers.Conv2D(filters=num_classes,
-#                                      kernel_size=(1, 1),
-#                                      strides=(1, 1),
-#                                      padding='same',
-#                                      activation='softmax'))
-#
-#     return model
-#
-#
-# model = create_model(depth=4,
-#                      start_f=4,
-#                      num_classes=3,
-#                      dynamic_input_shape=False)
-#
-# # Visualize created model as a table
-# model.summary()
-#
-# # Visualize initialized weights
-# print(model.weights)
-#
-#
-# # Optimization params
-# # -------------------
-#
-# # Loss
-# # Sparse Categorical Crossentropy to use integers (mask) instead of one-hot encoded labels
-# loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-# # learning rate
-# lr = 1e-3
-# optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
-# # -------------------
-#
-# # Validation metrics
-# # ------------------
-#
-# metrics = ['accuracy']
-# # ------------------
-#
-# # Compile Model
-# model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-#
-#
-# # Just for exercise try to restore a model after training it
-# # !! Use this just when restoring model..
-# # ---------------------------------------
-# restore_model = True
-# if restore_model:
-#     model = create_model(depth=4,
-#                          start_f=4,
-#                          num_classes=3,
-#                          dynamic_input_shape=True)
-#
-#     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-#                   metrics=['accuracy'])  # Needed for loading weights
-#
-#     model.load_weights(os.path.join(
-#         cwd, 'segmentation_experiments', 'EXP_FOLDER', 'ckpts', 'cp_60.ckpt'))  # use this if you want to restore saved model
-# # ----------------------------------------
-#
-# eval_out = model.evaluate(x=test_dataset,
-#                           steps=len(test_img_gen),
-#                           verbose=0)
-#
+
+# -------------------------------------- #
+#   Convolutional Neural Network (CNN)
+# -------------------------------------- #
+# Encoder-Decoder
+
+# Create Model
+# ------------
+
+def create_model(depth, start_f, num_classes, dynamic_input_shape):
+    model = tf.keras.Sequential()
+
+    # Encoder
+    # -------
+    for i in range(depth):
+
+        if i == 0:
+            if dynamic_input_shape:
+                input_shape = [None, None, output_channels]
+            else:
+                input_shape = [img_h, img_w, output_channels]
+        else:
+            input_shape = [None]
+
+        model.add(tf.keras.layers.Conv2D(filters=start_f,
+                                         kernel_size=(3, 3),
+                                         strides=(1, 1),
+                                         padding='same',
+                                         input_shape=input_shape))
+        model.add(tf.keras.layers.ReLU())
+        model.add(tf.keras.layers.MaxPool2D(pool_size=(2, 2)))
+
+        start_f *= 2
+
+    # Decoder
+    # -------
+    for i in range(depth):
+        model.add(tf.keras.layers.UpSampling2D(2, interpolation='bilinear'))
+        model.add(tf.keras.layers.Conv2D(filters=start_f // 2,
+                                         kernel_size=(3, 3),
+                                         strides=(1, 1),
+                                         padding='same'))
+
+        model.add(tf.keras.layers.ReLU())
+
+        start_f = start_f // 2
+
+    # Prediction Layer
+    # ----------------
+    model.add(tf.keras.layers.Conv2D(filters=num_classes,
+                                     kernel_size=(1, 1),
+                                     strides=(1, 1),
+                                     padding='same',
+                                     activation='softmax'))
+
+    return model
+
+
+model = create_model(depth=4,
+                     start_f=4,
+                     num_classes=num_classes,
+                     dynamic_input_shape=False)
+
+# Visualize created model as a table
+model.summary()
+
+# Visualize initialized weights
+print(model.weights)
+
+
+# Optimization params
+# -------------------
+
+# Loss
+# Sparse Categorical Crossentropy to use integers (mask) instead of one-hot encoded labels
+loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+# learning rate
+lr = 1e-3
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+# -------------------
+
+# Validation metrics
+# ------------------
+
+metrics = ['accuracy']
+# ------------------
+
+# Compile Model
+model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+
+# Just for exercise try to restore a model after training it
+# !! Use this just when restoring model..
+# ---------------------------------------
+
+eval_out = model.evaluate(x=valid_dataset,
+                          steps=len(valid_img_gen),
+                          verbose=0)
+
 # print("eval_out", eval_out)
-#
-# # TRAIN_LENGTH = info.splits['train'].num_examples
-# # BATCH_SIZE = 64
-# # BUFFER_SIZE = 1000
-# # STEPS_PER_EPOCH = TRAIN_LENGTH // BATCH_SIZE
+
