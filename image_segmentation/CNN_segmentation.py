@@ -35,7 +35,7 @@ cwd = os.getcwd()
 # The masks are basically labels for each pixel. Each pixel is given one of three categories :
 
 # Class 0 : Pixel belonging to the background.
-# Class 1 : Pixel of the building.
+# Class 1 : Pixel of the building. (corresponding to the value 255 in the stored masks)
 
 
 # ImageDataGenerator
@@ -62,6 +62,7 @@ if apply_data_augmentation:
                                             cval=0,
                                             rescale=1. / 255,
                                             validation_split=valid_split)
+
     train_mask_data_gen = ImageDataGenerator(rotation_range=10,
                                              width_shift_range=10,
                                              height_shift_range=10,
@@ -72,8 +73,9 @@ if apply_data_augmentation:
                                              cval=0,
                                              validation_split=valid_split)
 else:
-    train_img_data_gen = ImageDataGenerator(rescale=1. / 255)
-    train_mask_data_gen = ImageDataGenerator()
+    train_img_data_gen = ImageDataGenerator(rescale=1. / 255,
+                                            validation_split=valid_split)
+    train_mask_data_gen = ImageDataGenerator(validation_split=valid_split)
 
 # Create generators to read images from dataset directory
 # -------------------------------------------------------
@@ -91,7 +93,6 @@ img_w = 256
 
 # number of input channels (color space)
 output_channels = 1  # greyscale
-# Masks contains two values 0 (background) and 255 (buildings)
 
 num_classes = 2
 
@@ -101,18 +102,18 @@ train_img_gen = train_img_data_gen.flow_from_directory(os.path.join(train_dir, '
                                                        subset='training',  # subset of data
                                                        target_size=(img_w, img_h),
                                                        batch_size=batch_size,
-                                                       # color_mode='greyscale',
+                                                       color_mode='grayscale',
                                                        class_mode=None,
                                                        shuffle=True,
-                                                        interpolation='bilinear',
+                                                       interpolation='bilinear',
                                                        seed=SEED)
 
 train_mask_gen = train_mask_data_gen.flow_from_directory(os.path.join(train_dir, 'masks'),
-                                                        subset='training',
+                                                         subset='training',
                                                          target_size=(img_h, img_w),
                                                          batch_size=batch_size,
+                                                         color_mode='grayscale',
                                                          class_mode=None,
-                                                         # Because we have no class subfolders in this case
                                                          shuffle=True,
                                                          interpolation='bilinear',
                                                          seed=SEED)
@@ -125,21 +126,22 @@ valid_img_gen = train_img_data_gen.flow_from_directory(os.path.join(train_dir, '
                                                        subset='validation',
                                                        target_size=(img_h, img_w),
                                                        batch_size=batch_size,
+                                                       color_mode='grayscale',
                                                        class_mode=None,
-                                                       # Because we have no class subfolders in this case
                                                        shuffle=False,
                                                        interpolation='bilinear',
                                                        seed=SEED)
+
 valid_mask_gen = train_mask_data_gen.flow_from_directory(os.path.join(train_dir, 'masks'),
+                                                         subset='validation',
                                                          target_size=(img_h, img_w),
                                                          batch_size=batch_size,
+                                                         color_mode='grayscale',
                                                          class_mode=None,
-                                                         # Because we have no class subfolders in this case
                                                          shuffle=False,
                                                          interpolation='bilinear',
                                                          seed=SEED)
 valid_gen = zip(valid_img_gen, valid_mask_gen)
-
 
 # # Create Dataset objects
 # # ----------------------
@@ -183,10 +185,9 @@ valid_gen = zip(valid_img_gen, valid_mask_gen)
 #
 # # Repeat
 # test_dataset = valid_dataset.repeat()
-#
-#
-# # Let's test data generator
-# # -------------------------
+
+# Let's test data generator
+# -------------------------
 # import time
 # import matplotlib.pyplot as plt
 #
@@ -221,10 +222,8 @@ valid_gen = zip(valid_img_gen, valid_mask_gen)
 #     fig.canvas.draw()
 #     time.sleep(1)
 #
-#
 # np.unique(target_img)
-#
-#
+
 # # -------------------------------------- #
 # #   Convolutional Neural Network (CNN)
 # # -------------------------------------- #
