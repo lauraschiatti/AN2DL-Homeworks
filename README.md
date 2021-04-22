@@ -1,4 +1,4 @@
-### Artificial Neural Networks and Deep Learning Competitions
+# Artificial Neural Networks and Deep Learning Competitions
 
 Artificial Neural Networks and Deep Learning Kaggle Competitions @ MSc. Computer Science & Engineering - Politecnico di Milano
 
